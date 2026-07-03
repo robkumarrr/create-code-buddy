@@ -1,0 +1,37 @@
+{
+  "name": "create-code-buddy",
+  "version": "1.0.0",
+  "description": "A CLI tool to scaffold agentic context and rules.",
+  "main": "dist/index.js",
+  "bin": {
+    "create-code-buddy": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "scaffold",
+    "ai",
+    "agent"
+  ],
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "commander": "^11.1.0",
+    "picocolors": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
