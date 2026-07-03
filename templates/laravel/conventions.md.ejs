@@ -1,0 +1,12 @@
+# Coding Conventions
+
+## PHP Standards
+- Follow PSR-12 coding standards strictly.
+- Use strict typing where possible (`declare(strict_types=1);` and scalar type hints).
+- Prefer constructor property promotion for dependency injection.
+
+## Laravel Specifics
+- Use Route Model Binding instead of manually querying IDs in controllers.
+- Use Dependency Injection rather than relying heavily on global facades or helper functions (e.g., use `Illuminate\Http\Request` instead of `request()`).
+- Keep controllers thin. Move heavy business logic into Action classes or Services.
+- Always use early returns to avoid deeply nested conditionals.

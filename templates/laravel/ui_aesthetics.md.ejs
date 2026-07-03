@@ -1,0 +1,21 @@
+# UI Aesthetics and Styling
+
+<% if (options.frontend === 'api-only') { %>
+- This is an API-only application. There are no UI aesthetics or styling rules required for the backend.
+<% } else { %>
+- We use **Tailwind CSS** as our primary styling framework.
+- Avoid writing raw CSS or SCSS. Use Tailwind utility classes directly in the components.
+<% } %>
+
+<% if (options.frontend === 'blade') { %>
+- For Blade, group reusable UI elements into Blade Components (`resources/views/components`).
+- Call them using the `<x-component-name>` syntax.
+<% } else if (options.frontend === 'livewire') { %>
+- Keep Livewire views clean. Use Blade components for pure UI elements and only use Livewire components when interactivity (state/actions) is required.
+<% } else if (options.frontend === 'inertia-vue') { %>
+- For Vue, use `<script setup>` syntax and standard Vue component architecture.
+<% } else if (options.frontend === 'inertia-react') { %>
+- For React, use functional components and hooks. Do not use class components.
+<% } else if (options.frontend === 'inertia-svelte') { %>
+- For Svelte, keep logic, styles, and markup scoped within `.svelte` components.
+<% } %>

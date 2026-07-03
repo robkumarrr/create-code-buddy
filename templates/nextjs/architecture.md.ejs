@@ -1,0 +1,23 @@
+# Next.js Architecture
+
+We are using Next.js for our frontend application.
+
+## Routing System
+<% if (options.router === 'app') { %>
+- **CRITICAL**: We are using the modern **App Router** (Next.js 13+).
+- ALL pages, layouts, and API routes must be placed inside the `src/app` directory.
+- Use `page.tsx` for UI boundaries and `route.ts` for API endpoints.
+- Do NOT use the `pages/` directory.
+- Default to React Server Components. Only use `"use client"` when interactivity (hooks, state) is strictly required.
+<% } else { %>
+- **CRITICAL**: We are using the legacy **Pages Router**.
+- ALL pages and API routes must be placed inside the `src/pages` directory.
+- Do NOT use the `app/` directory.
+- Use `getServerSideProps` or `getStaticProps` for data fetching.
+<% } %>
+
+## Project Structure
+- `src/components`: Reusable UI components.
+- `src/lib`: Utility functions and shared logic.
+- `src/hooks`: Custom React hooks.
+- `src/types`: TypeScript interfaces and types.

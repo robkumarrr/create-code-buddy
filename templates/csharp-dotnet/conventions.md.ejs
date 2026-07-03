@@ -1,0 +1,13 @@
+# Coding Conventions
+
+## Naming Standards
+- **Classes, Records, Interfaces, Structs:** `PascalCase`. Interfaces must be prefixed with `I` (e.g., `IUserService`).
+- **Methods and Properties:** `PascalCase`.
+- **Method Arguments and Local Variables:** `camelCase`.
+- **Private Fields:** `_camelCase` with an underscore prefix.
+
+## C# Features
+- Use modern C# language features: records for DTOs, top-level statements, global usings, and implicit usings.
+- Use nullable reference types strictly (`<Nullable>enable</Nullable>`).
+- Always use `async` / `await` for I/O operations (database calls, HTTP requests).
+- Suffix asynchronous methods with `Async`.

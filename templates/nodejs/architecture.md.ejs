@@ -1,0 +1,25 @@
+# Node.js Architecture
+
+We are using Node.js for our backend application.
+
+## Framework Architecture
+<% if (options.architecture === 'nestjs') { %>
+- **CRITICAL**: We are using **NestJS**.
+- Follow strict Angular-style modular architecture.
+- Group related features into self-contained `Modules`.
+- All business logic must live inside `@Injectable()` Services.
+- Controllers should only handle HTTP requests and responses, delegating logic to services.
+- Always use Dependency Injection (DI) via the constructor.
+<% } else if (options.architecture === 'express') { %>
+- We are using **Express.js**.
+- Follow a standard Model-View-Controller (MVC) or Route-Controller-Service pattern.
+- Keep route definitions separate from controller logic.
+- Place all business logic inside dedicated Service files rather than inside the Express route handlers.
+- Use middleware for cross-cutting concerns like authentication and validation.
+<% } else { %>
+- Follow standard Node.js architectural patterns.
+<% } %>
+
+## General Node.js Rules
+- This is a backend service. Never write browser-specific code (e.g., `window` or `document`).
+- Always handle async errors properly (try/catch or async middleware wrappers) to prevent unhandled promise rejections.

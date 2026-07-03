@@ -1,0 +1,10 @@
+# UI Aesthetics and Styling
+
+<% if (options.architecture === 'mvc') { %>
+- We are using ASP.NET Core MVC with Razor Views.
+- Keep C# logic in the view to an absolute minimum. Use ViewModels to pass data.
+- Standard CSS or Bootstrap is often used, but follow the project's specific CSS framework.
+<% } else { %>
+- This is a backend API application. There are no frontend UI aesthetics or styling rules required.
+- Return structured JSON responses for frontend clients to consume.
+<% } %>

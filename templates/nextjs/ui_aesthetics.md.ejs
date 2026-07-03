@@ -1,0 +1,20 @@
+# UI Aesthetics and Styling
+
+## Styling Solution
+<% if (options.styling === 'tailwind') { %>
+- We strictly use **Tailwind CSS** for all component styling.
+- Do NOT write custom CSS, SCSS, or inline styles (`style={{...}}`) unless mathematically necessary for dynamic rendering.
+- Use utility classes directly in the `className` prop.
+- For conditional classes, use a library like `clsx` or `tailwind-merge`.
+<% } else if (options.styling === 'css-modules') { %>
+- We strictly use **CSS Modules** for component styling.
+- Every component should have a corresponding `.module.css` file.
+- Do NOT use Tailwind classes or inline styles.
+- Import styles like `import styles from './Component.module.css';` and apply them via `className={styles.container}`.
+<% } else { %>
+- Follow standard React styling guidelines.
+<% } %>
+
+## Best Practices
+- Keep components small and focused on a single responsibility.
+- Ensure accessible markup (use semantic HTML and aria-attributes where necessary).

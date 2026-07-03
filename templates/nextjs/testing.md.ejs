@@ -1,0 +1,19 @@
+# Testing Guidelines
+
+## Testing Framework
+<% if (options.testing === 'vitest') { %>
+- We use **Vitest** and **React Testing Library** for our test suite.
+- Tests should be written in `.test.ts` or `.test.tsx` files alongside the component they are testing.
+- Use `describe`, `it`, and `expect` from `vitest`.
+<% } else if (options.testing === 'jest') { %>
+- We use **Jest** and **React Testing Library** for our test suite.
+- Tests should be placed in a `__tests__` directory or alongside the component.
+- Use standard Jest globals (`describe`, `it`, `expect`).
+<% } else { %>
+- Follow standard testing guidelines for this framework.
+<% } %>
+
+## Mocking Best Practices
+- Mock external API calls and side-effects.
+- Do not over-mock internal dependencies if they are simple pure functions.
+- Test user behavior (clicking, typing) rather than implementation details (state variables).
