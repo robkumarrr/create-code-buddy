@@ -4,7 +4,8 @@
   "description": "A CLI tool to scaffold agentic context and rules.",
   "main": "dist/index.js",
   "bin": {
-    "create-code-buddy": "./dist/index.js"
+    "create-code-buddy": "./dist/index.js",
+    "ccb": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx src/index.ts",

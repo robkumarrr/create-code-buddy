@@ -75,6 +75,7 @@ export async function addRule(ruleName: string, projectRoot: string = process.cw
     fileContent = `# ${ruleName}\n\n${description ? `> ${description}\n\n` : ''}[Add your rule content here]`;
   }
 
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, HEADER + fileContent);
   outro(pc.green(`✔ Created ${path.relative(projectRoot, targetPath)}!`));
 }
