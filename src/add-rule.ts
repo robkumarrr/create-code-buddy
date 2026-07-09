@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import pc from 'picocolors';
-import { text, confirm, intro, outro } from '@clack/prompts';
+import { text, confirm, intro, outro, isCancel } from '@clack/prompts';
 
 const HEADER = `<!-- 
   🤖 CODE BUDDY AUTO-GENERATED FILE
@@ -56,23 +56,23 @@ export async function addRule(ruleName: string, projectRoot: string = process.cw
 
   const description = await text({
     message: 'Enter a brief description for this rule (or press Enter to skip):',
-    placeholder: 'e.g., Database interaction guidelines',
-    required: false
+    placeholder: 'e.g., Database interaction guidelines'
   });
+  if (isCancel(description)) return;
 
   let fileContent = '';
   if (isCursor) {
     const globs = await text({
       message: 'Enter globs for this rule (e.g., *.ts, *.tsx) or press Enter to skip (defaults to *.*):',
-      placeholder: '*.ts, *.tsx',
-      required: false
+      placeholder: '*.ts, *.tsx'
     });
+    if (isCancel(globs)) return;
 
     const finalGlobs = globs ? `"${(globs as string).split(',').map(s => s.trim()).join('", "')}"` : '"*.*"';
     const finalDesc = description ? description as string : `Custom rule for ${ruleName}`;
     fileContent = `---\ndescription: ${finalDesc}\nglobs: [${finalGlobs}]\n---\n\n# ${ruleName}\n\n[Add your rule content here]`;
   } else {
-    fileContent = `# ${ruleName}\n\n${description ? `> ${description}\n\n` : ''}[Add your rule content here]`;
+    fileContent = `# ${ruleName}\n\n${description ? `> ${description as string}\n\n` : ''}[Add your rule content here]`;
   }
 
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
