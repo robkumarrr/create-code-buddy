@@ -2,3 +2,13 @@ node_modules/
 dist/
 .env
 .DS_Store
+
+# Editor directories and files
+.idea/
+
+# Agent context directories (ignored so we don't commit test generated ones)
+.gemini/
+.agents/
+.cursor/
+agent-config/
+.github/instructions/

@@ -1,0 +1,31 @@
+# Laravel Architecture
+
+We are using Laravel for our backend and application logic.
+
+## Routing
+- All web routes must be defined in `routes/web.php`.
+- All API routes must be defined in `routes/api.php` and should return JSON responses.
+
+## Controllers & Responses
+<% if (options.frontend === 'blade') { %>
+- We are using **Blade** templates. Controllers should return views using `return view('view-name');`.
+<% } else if (options.frontend === 'livewire') { %>
+- We are using **Livewire**. Prefer full-page Livewire components for dynamic pages rather than standard controllers.
+<% } else if (options.frontend === 'inertia-vue') { %>
+- We are using **Inertia.js with Vue**. Controllers must return Inertia responses using `return Inertia::render('Component/Name', [...]);`.
+- Do NOT return Blade views unless it's the root `app.blade.php`.
+<% } else if (options.frontend === 'inertia-react') { %>
+- We are using **Inertia.js with React**. Controllers must return Inertia responses using `return Inertia::render('Component/Name', [...]);`.
+- Do NOT return Blade views unless it's the root `app.blade.php`.
+<% } else if (options.frontend === 'inertia-svelte') { %>
+- We are using **Inertia.js with Svelte**. Controllers must return Inertia responses using `return Inertia::render('Component/Name', [...]);`.
+- Do NOT return Blade views unless it's the root `app.blade.php`.
+<% } else if (options.frontend === 'api-only') { %>
+- We are building an **API Only** backend. All controllers must return JSON using `return response()->json([...]);` or Eloquent resources.
+<% } else { %>
+- Follow standard Laravel controller and routing practices.
+<% } %>
+
+## Models & Database
+- Always use Eloquent ORM. Avoid raw SQL queries unless strictly necessary for performance.
+- Use FormRequests for all validation logic to keep controllers clean.

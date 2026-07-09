@@ -1,0 +1,12 @@
+# Coding Conventions
+
+## TypeScript
+- We use strict TypeScript. `any` is strictly prohibited.
+- Prefer `interface` over `type` for object definitions unless unions are required.
+- Enable `strict: true` in `tsconfig.json`.
+
+## React Best Practices
+- Use functional components and hooks exclusively. No class components.
+- Avoid unnecessary `useEffect` hooks. Derive state during render when possible.
+- Use early returns to prevent deep nesting.
+- Name event handler props as `on[Event]` (e.g., `onSubmit`) and handler implementations as `handle[Event]` (e.g., `handleSubmit`).

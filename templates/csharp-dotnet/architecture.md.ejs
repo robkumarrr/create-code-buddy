@@ -1,0 +1,25 @@
+# C# .NET Architecture
+
+We are using .NET for our application.
+
+## API Architecture
+<% if (options.architecture === 'minimal') { %>
+- **CRITICAL**: We are using **Minimal APIs**.
+- Do NOT scaffold traditional `Controller` classes.
+- Define routes using `app.MapGet()`, `app.MapPost()`, etc., typically organized in extension methods (e.g., `MapWeatherEndpoints(this WebApplication app)`).
+- Inject services directly into the delegate signatures.
+<% } else if (options.architecture === 'controllers') { %>
+- We are using traditional **Web API Controllers**.
+- Group endpoints logically into classes inheriting from `ControllerBase`.
+- Use `[ApiController]` and route attributes like `[Route("api/[controller]")]`.
+<% } else if (options.architecture === 'mvc') { %>
+- We are using **ASP.NET Core MVC**.
+- Controllers should inherit from `Controller` and return `IActionResult` via `View()`.
+- Place views in the `Views/` directory and use Razor syntax.
+<% } else { %>
+- Follow standard .NET application architecture.
+<% } %>
+
+## Data Access
+- We typically use Entity Framework Core for data access. 
+- Use the Repository pattern only if explicitly required by the project; otherwise, inject `DbContext` directly into services.

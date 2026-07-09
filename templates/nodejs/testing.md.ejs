@@ -1,0 +1,15 @@
+# Testing Guidelines
+
+## Unit Testing
+- We use standard testing frameworks (like Jest or Vitest) for our unit tests.
+- Place unit tests adjacent to the file they are testing (e.g., `user.service.ts` -> `user.service.spec.ts`) or in a dedicated `__tests__` folder.
+<% if (options.architecture === 'nestjs') { %>
+- Utilize the `@nestjs/testing` module to create isolated testing modules.
+- Mock dependencies (repositories, other services) using custom providers in the `TestingModule`.
+<% } else { %>
+- Mock external dependencies and database calls.
+<% } %>
+
+## E2E Testing
+- Write End-to-End tests for critical API routes.
+- Use `supertest` to mock HTTP requests against the application instance.

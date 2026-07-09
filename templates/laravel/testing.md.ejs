@@ -1,0 +1,21 @@
+# Testing Guidelines
+
+## Framework
+<% if (options.testing === 'pest') { %>
+- We strictly use **Pest PHP** for all backend testing.
+- Do NOT use PHPUnit syntax (e.g., `class ExampleTest extends TestCase`, `public function test_it_works()`).
+- Write tests using Pest's `it()` or `test()` functions.
+- Prefer the fluent expectations API: `expect($value)->toBeTrue();`.
+<% } else if (options.testing === 'phpunit') { %>
+- We strictly use **PHPUnit** for all backend testing.
+- Structure tests as classes extending `Tests\TestCase`.
+- Prefix test methods with `test_` or use the `@test` annotation.
+- Use standard PHPUnit assertions: `$this->assertTrue($value);`.
+<% } else { %>
+- Follow standard Laravel testing practices.
+<% } %>
+
+## Best Practices
+- Focus on Feature tests over Unit tests. The database and framework should be tested together as often as possible.
+- Use the `RefreshDatabase` trait (or Pest equivalent) to reset the database between tests.
+- Always use Factories to seed test data rather than inserting raw database rows.

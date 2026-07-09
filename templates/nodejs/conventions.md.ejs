@@ -1,0 +1,20 @@
+# Coding Conventions
+
+## Language
+<% if (options.language === 'typescript') { %>
+- We strictly use **TypeScript**.
+- The `any` type is completely prohibited. Always define interfaces or types for your payloads, requests, and responses.
+- Enable `strict: true` in your `tsconfig.json`.
+- Use DTOs (Data Transfer Objects) for incoming request validation.
+<% } else if (options.language === 'javascript') { %>
+- We are using **JavaScript**.
+- Use JSDoc comments to document complex functions and define object shapes.
+- Use modern ES6+ syntax (const/let, arrow functions, destructuring).
+<% } else { %>
+- Follow standard conventions.
+<% } %>
+
+## General Best Practices
+- Keep functions small and single-purpose.
+- Avoid deeply nested `if` statements; use early returns instead.
+- Use descriptive variable names that indicate intent (e.g., `isUserAuthenticated` rather than `auth`).

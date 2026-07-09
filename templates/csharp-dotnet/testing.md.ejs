@@ -1,0 +1,15 @@
+# Testing Guidelines
+
+## Framework & Tools
+- We primarily use **xUnit** as our test framework.
+- Use **Moq** or **NSubstitute** for mocking dependencies.
+- Use **FluentAssertions** for readable assertion syntax.
+
+## Test Structure
+- Organize tests using the AAA (Arrange, Act, Assert) pattern.
+- Place tests in a separate project named `{ProjectName}.Tests`.
+- Name test methods clearly, often following the `Method_Scenario_ExpectedResult` pattern.
+
+## Integration Testing
+- Use `WebApplicationFactory` to write integration tests for API endpoints.
+- Use an in-memory database or Testcontainers for database interactions in tests.
