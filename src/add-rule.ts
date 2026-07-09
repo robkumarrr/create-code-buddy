@@ -24,18 +24,38 @@ export async function addRule(ruleName: string, projectRoot: string = process.cw
     'agent-config'
   ];
 
+  let currentDir = projectRoot;
   let targetDir = '';
-  for (const dir of possibleDirs) {
-    if (fs.existsSync(path.join(projectRoot, dir))) {
-      targetDir = dir;
+  let foundRoot = '';
+
+  while (true) {
+    for (const dir of possibleDirs) {
+      if (fs.existsSync(path.join(currentDir, dir))) {
+        targetDir = dir;
+        foundRoot = currentDir;
+        break;
+      }
+    }
+    
+    if (targetDir) break;
+
+    // Stop if we hit a project boundary (package.json or .git)
+    if (fs.existsSync(path.join(currentDir, 'package.json')) || fs.existsSync(path.join(currentDir, '.git'))) {
       break;
     }
+
+    const parentDir = path.dirname(currentDir);
+    // Stop if we hit the filesystem root
+    if (parentDir === currentDir) break;
+    currentDir = parentDir;
   }
 
   if (!targetDir) {
-    outro(pc.red(`No agent configuration folder found. Please run 'npx create-code-buddy' first to initialize.`));
+    outro(pc.red(`No agent configuration folder found within the project boundaries. Please run 'npx create-code-buddy' first to initialize.`));
     return;
   }
+
+  projectRoot = foundRoot;
 
   const isCursor = targetDir === '.cursor/rules';
   const ext = isCursor ? '.mdc' : '.md';
@@ -50,8 +70,13 @@ export async function addRule(ruleName: string, projectRoot: string = process.cw
   const targetPath = path.join(saveDir, fileName);
 
   if (fs.existsSync(targetPath)) {
-    outro(pc.yellow(`Rule ${fileName} already exists in ${path.relative(projectRoot, saveDir)}.`));
-    return;
+    const shouldOverwrite = await confirm({
+      message: `Rule ${fileName} already exists in ${path.relative(projectRoot, saveDir)}. Do you want to overwrite it?`
+    });
+    if (isCancel(shouldOverwrite) || !shouldOverwrite) {
+      outro(pc.yellow('Aborted.'));
+      return;
+    }
   }
 
   const description = await text({
