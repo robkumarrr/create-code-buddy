@@ -31,7 +31,7 @@
   "license": "MIT",
   "dependencies": {
     "@clack/prompts": "^0.7.0",
-    "commander": "^11.1.0",
+    "commander": "^15.0.0",
     "ejs": "^6.0.1",
     "picocolors": "^1.0.0"
   },
