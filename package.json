@@ -1,6 +1,6 @@
 {
   "name": "create-code-buddy",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "description": "A CLI tool to scaffold agentic context and rules.",
   "main": "dist/index.js",
   "bin": {
