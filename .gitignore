@@ -12,3 +12,5 @@ dist/
 .cursor/
 agent-config/
 .github/instructions/
+
+ideas.txt
