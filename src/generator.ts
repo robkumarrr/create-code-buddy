@@ -7,10 +7,8 @@ import { syncAgents } from './sync';
 
 export async function generateConfig(answers: PromptAnswers, projectRoot: string) {
   const codebuddyDir = path.join(projectRoot, '.codebuddy');
-  const rulesDir = path.join(codebuddyDir, 'rules');
-
-  if (!fs.existsSync(rulesDir)) {
-    fs.mkdirSync(rulesDir, { recursive: true });
+  if (!fs.existsSync(codebuddyDir)) {
+    fs.mkdirSync(codebuddyDir, { recursive: true });
   }
 
   // 1. Write the config file
@@ -24,7 +22,7 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
   // 2. Write the baseline SSOT rules
   let createdCount = 0;
   for (const [filename, template] of Object.entries(BASELINE_RULES)) {
-    const filePath = path.join(rulesDir, filename);
+    const filePath = path.join(codebuddyDir, filename);
     if (!fs.existsSync(filePath)) {
       const fileContent = `---\ndescription: ${template.description}\nglobs: [${template.globs}]\n---\n\n${template.content}`;
       fs.writeFileSync(filePath, fileContent);

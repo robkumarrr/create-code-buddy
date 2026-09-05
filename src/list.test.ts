@@ -1,24 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { listRules } from './list';
 import fs from 'fs';
-import { select } from '@clack/prompts';
-import { exec } from 'child_process';
+import * as prompts from '@clack/prompts';
 
 vi.mock('fs');
-vi.mock('child_process');
 vi.mock('@clack/prompts', () => ({
   intro: vi.fn(),
   outro: vi.fn(),
   select: vi.fn(),
-  isCancel: vi.fn((val) => val === undefined || val === null)
+  isCancel: vi.fn(() => false)
 }));
 vi.mock('picocolors', () => ({
   default: {
-    bgCyan: vi.fn(s => s),
-    black: vi.fn(s => s),
+    green: vi.fn(s => s),
     red: vi.fn(s => s),
     yellow: vi.fn(s => s),
-    green: vi.fn(s => s)
+    cyan: vi.fn(s => s),
+    bgCyan: vi.fn(s => s),
+    black: vi.fn(s => s),
+    dim: vi.fn(s => s),
+    underline: vi.fn(s => s)
   }
 }));
 
@@ -27,35 +28,32 @@ describe('listRules', () => {
     vi.resetAllMocks();
   });
 
-  it('should show error if no agent config is found', async () => {
+  it('should show error if no codebuddy config is found', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
-    
+
     await listRules('/fake/path');
-    
-    const { outro } = await import('@clack/prompts');
-    expect(outro).toHaveBeenCalledWith(expect.stringContaining('No agent configuration folder found'));
+
+    expect(prompts.outro).toHaveBeenCalledWith(expect.stringContaining('No .codebuddy folder found'));
   });
 
   it('should show error if no markdown files are found', async () => {
-    vi.mocked(fs.existsSync).mockImplementation((p) => (p as string).includes('.agents'));
+    vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.readdirSync).mockReturnValue([]);
-    
+
     await listRules('/fake/path');
-    
-    const { outro } = await import('@clack/prompts');
-    expect(outro).toHaveBeenCalledWith(expect.stringContaining('No markdown rules found'));
+
+    expect(prompts.outro).toHaveBeenCalledWith(expect.stringContaining('No markdown rules found'));
   });
 
-  it('should list files and open selected one', async () => {
-    vi.mocked(fs.existsSync).mockImplementation((p) => (p as string).includes('.agents'));
+  it('should print a clickable link to the selected file', async () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.readdirSync).mockReturnValue([
-      { name: 'rule1.md', isDirectory: () => false } as any
+      { name: 'test.md', isDirectory: () => false } as any
     ]);
-    
-    vi.mocked(select).mockResolvedValue('/fake/path/.agents/rule1.md');
-    
+    vi.mocked(prompts.select).mockResolvedValue('/fake/path/.codebuddy/test.md');
+
     await listRules('/fake/path');
-    
-    expect(exec).toHaveBeenCalled();
+
+    expect(prompts.outro).toHaveBeenCalledWith(expect.stringContaining('CMD+Click to edit:'));
   });
 });

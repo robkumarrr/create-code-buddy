@@ -24,7 +24,7 @@ export async function addEntry(projectRoot: string) {
   console.clear();
   intro(pc.bgCyan(pc.black(` create-code-buddy: Add Entry/Directory `)));
 
-  const baseDir = path.join(projectRoot, '.codebuddy', 'rules');
+  const baseDir = path.join(projectRoot, '.codebuddy');
   if (!fs.existsSync(baseDir)) {
     outro(pc.red('No .codebuddy directory found. Run `npx create-code-buddy init` first.'));
     return;

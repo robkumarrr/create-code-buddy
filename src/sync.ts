@@ -89,8 +89,8 @@ export async function syncAgents(projectRoot: string) {
     return;
   }
 
-  const rulesDir = path.join(projectRoot, '.codebuddy', 'rules');
-  const files = getMarkdownFiles(rulesDir);
+  const ssotDir = path.join(projectRoot, '.codebuddy');
+  const files = getMarkdownFiles(ssotDir);
 
   const foldersToIgnore: string[] = [];
 
@@ -115,7 +115,7 @@ export async function syncAgents(projectRoot: string) {
     }
     
     if (agent === 'gemini') {
-      const targetBase = path.join(projectRoot, '.agents', 'rules');
+      const targetBase = path.join(projectRoot, '.agents');
       foldersToIgnore.push('.agents/');
       
       for (const file of files) {
@@ -143,7 +143,7 @@ export async function syncAgents(projectRoot: string) {
     }
     
     if (agent === 'generic') {
-      const targetBase = path.join(projectRoot, 'agent-config', 'rules');
+      const targetBase = path.join(projectRoot, 'agent-config');
       foldersToIgnore.push('agent-config/');
       
       for (const file of files) {

@@ -4,39 +4,6 @@ import pc from 'picocolors';
 import { intro, outro, select, isCancel } from '@clack/prompts';
 import { exec } from 'child_process';
 
-function getOpenCommand(filePath: string): string {
-  const platform = process.platform;
-  if (platform === 'darwin') return `open "${filePath}"`;
-  if (platform === 'win32') return `start "" "${filePath}"`;
-  return `xdg-open "${filePath}"`;
-}
-
-function findAgentDir(startDir: string): { root: string, dir: string } | null {
-  const possibleDirs = [
-    '.cursor/rules',
-    '.agents',
-    '.gemini',
-    '.github/instructions',
-    'agent-config'
-  ];
-
-  let currentDir = startDir;
-
-  while (true) {
-    for (const dir of possibleDirs) {
-      if (fs.existsSync(path.join(currentDir, dir))) {
-        return { root: currentDir, dir };
-      }
-    }
-    if (fs.existsSync(path.join(currentDir, 'package.json')) || fs.existsSync(path.join(currentDir, '.git'))) {
-      break;
-    }
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) break;
-    currentDir = parentDir;
-  }
-  return null;
-}
 
 function getMarkdownFiles(dir: string): string[] {
   let results: string[] = [];
@@ -56,24 +23,22 @@ export async function listRules(projectRoot: string = process.cwd()) {
   console.clear();
   intro(pc.bgCyan(pc.black(` create-code-buddy: Navigating Rules `)));
 
-  const agentConfig = findAgentDir(projectRoot);
+  const codebuddyDir = path.join(projectRoot, '.codebuddy');
 
-  if (!agentConfig) {
-    outro(pc.red(`No agent configuration folder found. Please run 'npx create-code-buddy init' first.`));
+  if (!fs.existsSync(codebuddyDir)) {
+    outro(pc.red(`No .codebuddy folder found. Please run 'npx create-code-buddy init' first.`));
     return;
   }
 
-  const targetPath = path.join(agentConfig.root, agentConfig.dir);
-  const files = getMarkdownFiles(targetPath);
+  const files = getMarkdownFiles(codebuddyDir);
 
   if (files.length === 0) {
-    outro(pc.yellow(`No markdown rules found in ${agentConfig.dir}.`));
+    outro(pc.yellow(`No markdown rules found in .codebuddy.`));
     return;
   }
 
-  // Create relative paths for display
   const options = files.map(file => {
-    const relativePath = path.relative(agentConfig.root, file);
+    const relativePath = path.relative(projectRoot, file);
     return {
       value: file,
       label: relativePath
@@ -81,7 +46,7 @@ export async function listRules(projectRoot: string = process.cwd()) {
   });
 
   const selectedFile = await select({
-    message: 'Select a rule to open in your editor:',
+    message: 'Select a rule to view/edit:',
     options: options,
   });
 
@@ -91,13 +56,8 @@ export async function listRules(projectRoot: string = process.cwd()) {
   }
 
   const fileToOpen = selectedFile as string;
-  const cmd = getOpenCommand(fileToOpen);
+  const relPath = path.relative(projectRoot, fileToOpen);
+  const link = `\x1b]8;;file://${fileToOpen}\x1b\\${relPath}\x1b]8;;\x1b\\`;
   
-  exec(cmd, (error) => {
-    if (error) {
-      outro(pc.red(`Failed to open file: ${error.message}`));
-    } else {
-      outro(pc.green(`✔ Opened ${path.relative(agentConfig.root, fileToOpen)}`));
-    }
-  });
+  outro(pc.green(`✔ Selected Entry! `) + pc.dim(`CMD+Click to edit: `) + pc.cyan(pc.underline(link)));
 }

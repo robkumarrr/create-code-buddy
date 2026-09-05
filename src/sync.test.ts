@@ -46,7 +46,7 @@ describe('syncAgents', () => {
 
     // Should create gemini MD
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join('/fake/path', '.agents/rules/test.md'),
+      path.join('/fake/path', '.agents/test.md'),
       '---\ndescription: Test\nglobs: ["*.ts"]\n---\n# Content'
     );
   });
