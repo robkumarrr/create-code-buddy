@@ -6,6 +6,7 @@ import { program } from 'commander';
 import { runPrompts } from './prompts';
 import { generateConfig } from './generator';
 import { addRule } from './add-rule';
+import { listRules } from './list';
 
 async function main() {
   program
@@ -55,6 +56,13 @@ async function main() {
     .description('Scaffold a new rule template dynamically')
     .action(async (name) => {
       await addRule(name, process.cwd());
+    });
+
+  program
+    .command('list')
+    .description('Navigate and open generated rule files')
+    .action(async () => {
+      await listRules(process.cwd());
     });
 
   program.parse(process.argv);

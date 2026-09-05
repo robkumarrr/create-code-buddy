@@ -53,23 +53,18 @@ npx create-code-buddy init --yes --framework nextjs --agent cursor --options '{"
 ## ⚡ Laravel Boost Integration
 If you select **Laravel**, the CLI will automatically ask if you want to install [Laravel Boost](https://github.com/laravel/boost), an official package that provides deep agent integrations and acts as an MCP server. You can choose to install both!
 
-## 🐳 Running via Docker (No Node.js Required)
+## 🗺️ Navigating Rules (Interactive List)
+Once you have scaffolded your rules, you can easily navigate and open them in your editor without digging through your file tree:
 
-If you don't have Node.js installed on your machine, you can run `create-code-buddy` entirely via Docker! 
-
-Because the CLI needs to write files to your local repository, you must mount your current directory into the container using the `-v` flag.
-
-First, build or pull the image:
 ```bash
-docker build -t create-code-buddy .
+npx create-code-buddy list
+# Or use the shortcut:
+npx ccb list
 ```
 
-Then, run it inside any project directory:
-```bash
-docker run --rm -it -v $(pwd):/workspace create-code-buddy init
-```
+This will open an interactive menu of all generated rules. Select a rule to instantly open it in your system's default editor.
 
-*Note: For Homebrew users, a Tap is currently in development. In the meantime, Docker or `npx` are the recommended paths.*
+**✨ Agent Skill Injected:** When you run `init`, `create-code-buddy` also injects a native "Skill" file (e.g., `.agents/skills/project-summary/SKILL.md` or a `.mdc` file). This teaches your AI assistant exactly how to read the newly scaffolded folders and how to summarize the project state for you!
 
 ## 📦 Supported Frameworks & Options
 
