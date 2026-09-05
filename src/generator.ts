@@ -1,193 +1,43 @@
 import fs from 'fs';
 import path from 'path';
-import { PromptAnswers } from './prompts';
 import pc from 'picocolors';
-import { select, isCancel, spinner } from '@clack/prompts';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { PromptAnswers } from './prompts';
+import { BASELINE_RULES } from './defaults';
+import { syncAgents } from './sync';
 
-const execAsync = promisify(exec);
+export async function generateConfig(answers: PromptAnswers, projectRoot: string) {
+  const codebuddyDir = path.join(projectRoot, '.codebuddy');
+  const rulesDir = path.join(codebuddyDir, 'rules');
 
-const HEADER = `<!-- 
-  🤖 CODE BUDDY AUTO-GENERATED FILE
-  This file provides context to your AI agent.
-  ✅ SAFE TO EDIT: You are encouraged to modify, add, or delete rules here!
--->
+  if (!fs.existsSync(rulesDir)) {
+    fs.mkdirSync(rulesDir, { recursive: true });
+  }
 
-`;
+  // 1. Write the config file
+  const configPath = path.join(codebuddyDir, 'config.json');
+  const config = {
+    agents: answers.agents,
+    gitignore_compiled_agents: answers.addToGitignore
+  };
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-export async function generateConfig(answers: PromptAnswers, projectRoot: string = process.cwd(), disableMinimizer: boolean = false) {
-  const createdFiles: string[] = [];
-  const { framework, agent, addToGitignore, laravelBoost, options } = answers;
-  
-  if (laravelBoost === 'boost_only' || laravelBoost === 'both') {
-    const s = spinner();
-    s.start('Installing Laravel Boost via composer...');
-    try {
-      await execAsync('composer require laravel/boost --dev', { cwd: projectRoot });
-      await execAsync('php artisan boost:install', { cwd: projectRoot });
-      s.stop('✔ Laravel Boost installed successfully!');
-    } catch (e: any) {
-      s.stop(pc.red('Failed to install Laravel Boost. Is composer in your PATH?'));
-      console.log(pc.dim(e.message));
-    }
-    
-    if (laravelBoost === 'boost_only') {
-      console.log(pc.green(`\n✔ Setup complete! Laravel Boost is handling your agent rules.`));
-      return;
+  // 2. Write the baseline SSOT rules
+  let createdCount = 0;
+  for (const [filename, template] of Object.entries(BASELINE_RULES)) {
+    const filePath = path.join(rulesDir, filename);
+    if (!fs.existsSync(filePath)) {
+      const fileContent = `---\ndescription: ${template.description}\nglobs: [${template.globs}]\n---\n\n${template.content}`;
+      fs.writeFileSync(filePath, fileContent);
+      createdCount++;
     }
   }
 
-  let targetDir = '';
-  switch (agent) {
-    case 'gemini':
-      targetDir = '.agents'; // Updated to open source standard
-      break;
-    case 'cursor':
-      targetDir = '.cursor/rules';
-      break;
-    case 'copilot':
-      targetDir = '.github/instructions';
-      break;
-    case 'generic':
-    default:
-      targetDir = 'agent-config';
-      break;
+  console.log(pc.green(`\n✔ Initialized Code Buddy SSOT at ${pc.bold('.codebuddy/')}`));
+  if (createdCount > 0) {
+    console.log(pc.dim(`   Scaffolded ${createdCount} baseline rules.`));
   }
 
-  const absoluteTargetDir = path.join(projectRoot, targetDir);
-  
-  if (!fs.existsSync(absoluteTargetDir)) {
-    fs.mkdirSync(absoluteTargetDir, { recursive: true });
-  }
-
-  await createTemplateFiles(absoluteTargetDir, framework, agent, createdFiles, disableMinimizer, options || {});
-  
-  console.log(pc.green(`\n✔ Scaffolding complete! Config generated at ${pc.bold(targetDir)}`));
-  if (!disableMinimizer) {
-    console.log(pc.cyan(`⚡ Token Minimization is ACTIVE. Your agent will use progressive disclosure and strict globs to save tokens and stay smart.`));
-  }
-  console.log(pc.magenta(`✨ Agent Skill Injected: Your AI has been taught how to navigate and summarize this project.`));
-  console.log(pc.magenta(`   Try asking it to: "summarize the project state"`));
-  
-  if (createdFiles.length > 0) {
-    console.log(pc.dim(`\n💡 Don't like it? To undo these changes, simply delete the following:`));
-    createdFiles.forEach(f => console.log(pc.dim(`   - ${path.relative(projectRoot, f)}`)));
-  }
-
-  if (addToGitignore) {
-    handleGitignore(projectRoot, targetDir);
-  }
-}
-
-async function safeWriteFile(filePath: string, content: string, createdFiles: string[]) {
-  if (fs.existsSync(filePath)) {
-    const filename = path.basename(filePath);
-    const action = await select({
-      message: `Conflict: ${pc.yellow(filename)} already exists. What would you like to do?`,
-      options: [
-        { value: 'skip', label: 'Skip (Keep existing file)' },
-        { value: 'overwrite', label: 'Overwrite (Replace with new template)' }
-      ]
-    });
-
-    if (isCancel(action) || action === 'skip') {
-      console.log(pc.dim(`Skipped ${filename}`));
-      return;
-    }
-  }
-
-  fs.writeFileSync(filePath, HEADER + content);
-  createdFiles.push(filePath);
-}
-
-import ejs from 'ejs';
-
-function renderTemplate(framework: string, templateName: string, options: Record<string, string>): string {
-  const templatePath = path.join(__dirname, '../templates', framework, `${templateName}.md.ejs`);
-  if (fs.existsSync(templatePath)) {
-    const templateContent = fs.readFileSync(templatePath, 'utf8');
-    return ejs.render(templateContent, { options });
-  }
-  return `# ${templateName.toUpperCase()} for ${framework}\n\n...`;
-}
-
-async function createTemplateFiles(targetDir: string, framework: string, agent: string, createdFiles: string[], disableMinimizer: boolean, options: Record<string, string>) {
-  const architectureContent = renderTemplate(framework, 'architecture', options);
-  const testingContent = renderTemplate(framework, 'testing', options);
-  const conventionsContent = renderTemplate(framework, 'conventions', options);
-  const uiContent = renderTemplate(framework, 'ui_aesthetics', options);
-
-  if (agent === 'cursor') {
-    // Cursor uses individual .mdc files with globs for token minimization
-    const testGlob = disableMinimizer ? '"*.*"' : '"*.test.*", "*.spec.*", "**/__tests__/**"';
-    const uiGlob = disableMinimizer ? '"*.*"' : '"*.css", "*.tsx", "*.jsx", "*.vue", "*.svelte"';
-    const logicGlob = disableMinimizer ? '"*.*"' : '"*.ts", "*.js", "*.php", "*.cs"';
-
-    const architectureMdc = `---\ndescription: Architecture rules for ${framework}\nglobs: ["*.*"]\n---\n\n${architectureContent}`;
-    const testingMdc = `---\ndescription: Testing guidelines for ${framework}\nglobs: [${testGlob}]\n---\n\n${testingContent}`;
-    const conventionsMdc = `---\ndescription: Coding conventions for ${framework}\nglobs: [${logicGlob}]\n---\n\n${conventionsContent}`;
-    const uiMdc = `---\ndescription: UI Aesthetics and styling rules\nglobs: [${uiGlob}]\n---\n\n${uiContent}`;
-
-    await safeWriteFile(path.join(targetDir, 'architecture.mdc'), architectureMdc, createdFiles);
-    await safeWriteFile(path.join(targetDir, 'testing.mdc'), testingMdc, createdFiles);
-    await safeWriteFile(path.join(targetDir, 'conventions.mdc'), conventionsMdc, createdFiles);
-    await safeWriteFile(path.join(targetDir, 'ui_aesthetics.mdc'), uiMdc, createdFiles);
-
-    const projectSummaryMdc = `---\ndescription: Generates a high-level summary of the project state and architecture.\nglobs: ["*.*"]\n---\n# Project Summary Workflow\n\nWhen asked for a project summary, follow these steps:\n1. Read the framework architecture and convention rules in this directory to understand the stack.\n2. Read the \`package.json\` (or equivalent dependency file) and the \`src\` (or equivalent source) directory.\n3. Output a structured Markdown summary of the current project state, what features are currently implemented, and what the core stack is.\n4. Remind the user they can run \`npx ccb list\` in their terminal to interactively navigate the scaffolded agent rules.`;
-    await safeWriteFile(path.join(targetDir, 'project-summary.mdc'), projectSummaryMdc, createdFiles);
-  } else {
-    // Other agents rely on a root file and sub-folders
-    let rootFileName = 'system_prompt.md';
-    if (agent === 'gemini') rootFileName = 'AGENTS.md';
-    if (agent === 'copilot') rootFileName = 'copilot-instructions.md';
-    
-    let rootContent = `# ${framework.toUpperCase()} Agent Instructions\n`;
-    if (!disableMinimizer) {
-      rootContent += `\n**PROGRESSIVE DISCLOSURE ACTIVE**: Do NOT load all rules at once. Read the specific files in the \`rules/\` directory only when your task requires them (e.g., read \`rules/testing.md\` only when writing tests).\n`;
-    } else {
-      rootContent += `\nRead all rules in the \`rules/\` directory and keep them in mind for every prompt.\n`;
-    }
-
-    await safeWriteFile(path.join(targetDir, rootFileName), rootContent, createdFiles);
-
-    const rulesDir = path.join(targetDir, 'rules');
-    if (!fs.existsSync(rulesDir)) fs.mkdirSync(rulesDir);
-    await safeWriteFile(path.join(rulesDir, 'architecture.md'), architectureContent, createdFiles);
-    await safeWriteFile(path.join(rulesDir, 'conventions.md'), conventionsContent, createdFiles);
-    await safeWriteFile(path.join(rulesDir, 'testing.md'), testingContent, createdFiles);
-    await safeWriteFile(path.join(rulesDir, 'ui_aesthetics.md'), uiContent, createdFiles);
-
-    const skillContent = `---\nname: project-summary\ndescription: Generates a high-level summary of the project state and architecture based on the scaffolded rules.\n---\n\n# Project Summary Skill\n\nWhen the user asks for a project summary, follow these steps:\n1. Read the framework architecture and convention rules in this directory to understand the stack.\n2. Read the \`package.json\` (or equivalent dependency file) and the \`src\` (or equivalent source) directory.\n3. Output a structured Markdown summary of the current project state, what features are currently implemented, and what the core stack is.\n4. Remind the user they can run \`npx ccb list\` to interactively navigate the scaffolded agent rules.\n`;
-    
-    if (agent === 'gemini') {
-      const skillsDir = path.join(targetDir, 'skills', 'project-summary');
-      if (!fs.existsSync(skillsDir)) fs.mkdirSync(skillsDir, { recursive: true });
-      await safeWriteFile(path.join(skillsDir, 'SKILL.md'), skillContent, createdFiles);
-    } else {
-      await safeWriteFile(path.join(rulesDir, 'project-summary.md'), skillContent, createdFiles);
-    }
-  }
-
-  const specsDir = path.join(targetDir, 'specs');
-  if (!fs.existsSync(specsDir)) fs.mkdirSync(specsDir);
-  
-  const specContent = `# Implementation Spec Template\n\n## Goal\n[Describe the goal]\n\n## Architecture\n[Describe the architecture]\n\n## Step-by-Step\n1. [Step 1]\n2. [Step 2]`;
-  await safeWriteFile(path.join(specsDir, 'spec.md'), specContent, createdFiles);
-}
-
-function handleGitignore(projectRoot: string, targetDir: string) {
-  const gitignorePath = path.join(projectRoot, '.gitignore');
-  const ignoreEntry = `\n# Agent Rules\n${targetDir.split('/')[0]}\n`;
-  
-  if (fs.existsSync(gitignorePath)) {
-    const content = fs.readFileSync(gitignorePath, 'utf8');
-    if (!content.includes(targetDir.split('/')[0])) {
-      fs.appendFileSync(gitignorePath, ignoreEntry);
-      console.log(pc.dim(`Added ${targetDir.split('/')[0]} to .gitignore`));
-    }
-  } else {
-    fs.writeFileSync(gitignorePath, ignoreEntry);
-    console.log(pc.dim(`Created .gitignore and added ${targetDir.split('/')[0]}`));
-  }
+  // 3. Immediately trigger a sync to compile for the selected agents
+  console.log(pc.cyan(`\nCompiling rules for your selected agents...`));
+  await syncAgents(projectRoot);
 }
