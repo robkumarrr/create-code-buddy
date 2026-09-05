@@ -67,6 +67,8 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
   if (!disableMinimizer) {
     console.log(pc.cyan(`⚡ Token Minimization is ACTIVE. Your agent will use progressive disclosure and strict globs to save tokens and stay smart.`));
   }
+  console.log(pc.magenta(`✨ Agent Skill Injected: Your AI has been taught how to navigate and summarize this project.`));
+  console.log(pc.magenta(`   Try asking it to: "summarize the project state"`));
   
   if (createdFiles.length > 0) {
     console.log(pc.dim(`\n💡 Don't like it? To undo these changes, simply delete the following:`));
@@ -131,6 +133,9 @@ async function createTemplateFiles(targetDir: string, framework: string, agent: 
     await safeWriteFile(path.join(targetDir, 'testing.mdc'), testingMdc, createdFiles);
     await safeWriteFile(path.join(targetDir, 'conventions.mdc'), conventionsMdc, createdFiles);
     await safeWriteFile(path.join(targetDir, 'ui_aesthetics.mdc'), uiMdc, createdFiles);
+
+    const projectSummaryMdc = `---\ndescription: Generates a high-level summary of the project state and architecture.\nglobs: ["*.*"]\n---\n# Project Summary Workflow\n\nWhen asked for a project summary, follow these steps:\n1. Read the framework architecture and convention rules in this directory to understand the stack.\n2. Read the \`package.json\` (or equivalent dependency file) and the \`src\` (or equivalent source) directory.\n3. Output a structured Markdown summary of the current project state, what features are currently implemented, and what the core stack is.\n4. Remind the user they can run \`npx ccb list\` in their terminal to interactively navigate the scaffolded agent rules.`;
+    await safeWriteFile(path.join(targetDir, 'project-summary.mdc'), projectSummaryMdc, createdFiles);
   } else {
     // Other agents rely on a root file and sub-folders
     let rootFileName = 'system_prompt.md';
@@ -152,6 +157,16 @@ async function createTemplateFiles(targetDir: string, framework: string, agent: 
     await safeWriteFile(path.join(rulesDir, 'conventions.md'), conventionsContent, createdFiles);
     await safeWriteFile(path.join(rulesDir, 'testing.md'), testingContent, createdFiles);
     await safeWriteFile(path.join(rulesDir, 'ui_aesthetics.md'), uiContent, createdFiles);
+
+    const skillContent = `---\nname: project-summary\ndescription: Generates a high-level summary of the project state and architecture based on the scaffolded rules.\n---\n\n# Project Summary Skill\n\nWhen the user asks for a project summary, follow these steps:\n1. Read the framework architecture and convention rules in this directory to understand the stack.\n2. Read the \`package.json\` (or equivalent dependency file) and the \`src\` (or equivalent source) directory.\n3. Output a structured Markdown summary of the current project state, what features are currently implemented, and what the core stack is.\n4. Remind the user they can run \`npx ccb list\` to interactively navigate the scaffolded agent rules.\n`;
+    
+    if (agent === 'gemini') {
+      const skillsDir = path.join(targetDir, 'skills', 'project-summary');
+      if (!fs.existsSync(skillsDir)) fs.mkdirSync(skillsDir, { recursive: true });
+      await safeWriteFile(path.join(skillsDir, 'SKILL.md'), skillContent, createdFiles);
+    } else {
+      await safeWriteFile(path.join(rulesDir, 'project-summary.md'), skillContent, createdFiles);
+    }
   }
 
   const specsDir = path.join(targetDir, 'specs');
