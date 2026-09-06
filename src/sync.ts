@@ -65,9 +65,19 @@ export function updateGitignore(projectRoot: string, foldersToIgnore: string[], 
     content = fs.readFileSync(gitignorePath, 'utf8');
   }
 
-  // Remove existing block
-  const blockRegex = new RegExp(`\\n?${START_MARKER}[\\s\\S]*?${END_MARKER}\\n?`, 'g');
-  content = content.replace(blockRegex, '\n');
+  let startIndex = content.indexOf(START_MARKER);
+  while (startIndex !== -1) {
+    const endIndex = content.indexOf(END_MARKER, startIndex);
+    if (endIndex !== -1) {
+      // Find the start of the line with the START_MARKER
+      const lineStart = content.lastIndexOf('\n', startIndex) === -1 ? 0 : content.lastIndexOf('\n', startIndex);
+      const after = content.substring(endIndex + END_MARKER.length);
+      content = content.substring(0, lineStart) + after;
+    } else {
+      break;
+    }
+    startIndex = content.indexOf(START_MARKER);
+  }
 
   if (!remove && foldersToIgnore.length > 0) {
     const block = `\n${START_MARKER}\n${foldersToIgnore.join('\n')}\n${END_MARKER}\n`;
