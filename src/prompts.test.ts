@@ -27,7 +27,8 @@ describe('prompts', () => {
     const result = await runPrompts();
     expect(result).toEqual({
       agents: ['cursor', 'gemini'],
-      addToGitignore: true
+      addToGitignore: true,
+      addPostinstall: false
     });
   });
 
@@ -43,7 +44,8 @@ describe('prompts', () => {
     expect(clackPrompts.multiselect).not.toHaveBeenCalled();
     expect(result).toEqual({
       agents: ['copilot'],
-      addToGitignore: true
+      addToGitignore: true,
+      addPostinstall: expect.any(Boolean)
     });
   });
 });

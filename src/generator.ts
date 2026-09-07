@@ -11,6 +11,22 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
     fs.mkdirSync(codebuddyDir, { recursive: true });
   }
 
+  // 0. Optionally add postinstall script
+  if (answers.addPostinstall) {
+    const pkgPath = path.join(projectRoot, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkgContent = fs.readFileSync(pkgPath, 'utf8');
+        const pkg = JSON.parse(pkgContent);
+        if (!pkg.scripts) pkg.scripts = {};
+        pkg.scripts.postinstall = 'npx create-code-buddy sync';
+        fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+      } catch (err) {
+        // Silently fail or log if package.json is malformed
+      }
+    }
+  }
+
   // 1. Write the config file
   const configPath = path.join(codebuddyDir, 'config.json');
   const config = {

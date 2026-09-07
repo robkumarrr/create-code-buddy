@@ -14,13 +14,24 @@ async function main() {
   program
     .name('create-code-buddy')
     .description('A CLI tool to compile and manage agentic context and rules.')
-    .version('1.0.0');
+    .version('1.0.0')
+    .addHelpText('after', `
+Examples:
+  $ npx create-code-buddy init         # Interactive setup wizard
+  $ npx create-code-buddy edit         # Edit existing agent config
+  $ npx create-code-buddy add          # Interactively add a rule
+  $ npx create-code-buddy sync         # Manually compile rules
+  $ npx create-code-buddy clean        # Delete compiled folders
+  $ npx create-code-buddy list         # View and navigate rules
+`);
 
   program
     .command('init', { isDefault: true })
-    .description('Initialize the Code Buddy SSOT and config')
-    .option('-y, --yes', 'Skip all prompts and use defaults (useful for AI agents)')
-    .option('-a, --agents <names>', 'Comma-separated list of agents (e.g. cursor,gemini,copilot)')
+    .alias('edit')
+    .alias('config')
+    .description('Scaffold or edit your .codebuddy/ SSOT and configure AI Agents')
+    .option('-y, --yes', 'Skip prompts and use default configuration')
+    .option('-a, --agents <agents>', 'Comma-separated list of agents to configure (cursor,gemini,copilot,generic)')
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
     .action(async (cliOptions) => {
       console.clear();
