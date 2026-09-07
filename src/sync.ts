@@ -25,7 +25,7 @@ function getMarkdownFiles(dir: string, baseDir: string = dir): { abs: string, re
     const fullPath = path.join(dir, item.name);
     if (item.isDirectory()) {
       results = results.concat(getMarkdownFiles(fullPath, baseDir));
-    } else if (item.name.endsWith('.md')) {
+    } else if (item.name.endsWith('.md') || item.name.endsWith('.mdc')) {
       results.push({
         abs: fullPath,
         rel: path.relative(baseDir, fullPath)
