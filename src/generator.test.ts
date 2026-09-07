@@ -26,7 +26,8 @@ describe('generator', () => {
     
     await generateConfig({
       agents: ['cursor', 'gemini'],
-      addToGitignore: true
+      addToGitignore: true,
+      addPostinstall: false
     }, '/fake/path');
 
     expect(fs.mkdirSync).toHaveBeenCalled();
