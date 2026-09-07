@@ -28,9 +28,13 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false) 
   for (const folder of folders) {
     const dirPath = path.join(projectRoot, folder);
     if (fs.existsSync(dirPath)) {
-      fs.rmSync(dirPath, { recursive: true, force: true });
-      console.log(pc.dim(`Deleted ${folder}`));
-      deletedCount++;
+      try {
+        fs.rmSync(dirPath, { recursive: true, force: true });
+        console.log(pc.dim(`Deleted ${folder}`));
+        deletedCount++;
+      } catch (err) {
+        console.log(pc.yellow(`Warning: Could not delete ${folder}. It might be locked by another process.`));
+      }
     }
   }
 

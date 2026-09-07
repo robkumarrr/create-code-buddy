@@ -116,7 +116,7 @@ export async function addEntry(projectRoot: string, options?: { name?: string, g
       placeholder: '*.sql'
     });
     if (isCancel(customGlob)) { outro(pc.yellow('Cancelled.')); return; }
-    const customFormatted = `"${(customGlob as string).split(',').map(s => s.trim()).join('", "')}"`;
+    const customFormatted = `"${(customGlob as string).split(',').map(s => s.trim().replace(/^"|"$/g, '')).join('", "')}"`;
     finalGlobs = finalGlobs ? `${finalGlobs}, ${customFormatted}` : customFormatted;
   }
 

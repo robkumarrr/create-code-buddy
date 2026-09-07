@@ -22,7 +22,7 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
         pkg.scripts.postinstall = 'npx create-code-buddy sync';
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
       } catch (err) {
-        // Silently fail or log if package.json is malformed
+        console.log(pc.yellow(`Warning: Could not inject postinstall script because package.json is malformed.`));
       }
     }
   }

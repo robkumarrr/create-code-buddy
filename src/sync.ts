@@ -36,7 +36,7 @@ function getMarkdownFiles(dir: string, baseDir: string = dir): { abs: string, re
 }
 
 function parseFrontmatter(content: string) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   if (!match) return { attributes: {}, body: content };
   
   const frontmatter = match[1];
