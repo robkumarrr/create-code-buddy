@@ -57,7 +57,6 @@ export async function listRules(projectRoot: string = process.cwd()) {
 
   const fileToOpen = selectedFile as string;
   const relPath = path.relative(projectRoot, fileToOpen);
-  const link = `\x1b]8;;file://${fileToOpen}\x1b\\${relPath}\x1b]8;;\x1b\\`;
   
-  outro(pc.green(`✔ Selected Entry! `) + pc.dim(`CMD+Click to edit: `) + pc.cyan(pc.underline(link)));
+  outro(pc.green(`✔ Selected Entry! `) + pc.dim(`Open this file in your editor: `) + pc.cyan(relPath));
 }

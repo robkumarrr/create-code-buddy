@@ -112,11 +112,11 @@ export async function addEntry(projectRoot: string, options?: { name?: string, g
 
   if ((globChoices as string[]).includes('custom')) {
     const customGlob = await text({
-      message: 'Enter your custom glob (e.g., "*.sql"):',
+      message: 'Enter your custom glob(s) (e.g. *.sql, *.graphql):',
       placeholder: '*.sql'
     });
     if (isCancel(customGlob)) { outro(pc.yellow('Cancelled.')); return; }
-    const customFormatted = `"${(customGlob as string).split(',').map(s => s.trim().replace(/^"|"$/g, '')).join('", "')}"`;
+    const customFormatted = (customGlob as string).split(',').map(s => `"${s.trim().replace(/^"|"$/g, '')}"`).join(', ');
     finalGlobs = finalGlobs ? `${finalGlobs}, ${customFormatted}` : customFormatted;
   }
 
@@ -128,11 +128,9 @@ export async function addEntry(projectRoot: string, options?: { name?: string, g
   fs.writeFileSync(filePath, fileContent);
   
   const relPath = path.relative(projectRoot, filePath);
-  // Terminal clickable link
-  const link = `\x1b]8;;file://${filePath}\x1b\\${relPath}\x1b]8;;\x1b\\`;
   
   console.log(pc.green(`✔ Created Entry!`));
-  console.log(pc.dim(`CMD+Click to edit: `) + pc.cyan(pc.underline(link)));
+  console.log(pc.dim(`Open this file in your editor: `) + pc.cyan(relPath));
 
   console.log(pc.cyan(`\nSyncing updates...`));
   await syncAgents(projectRoot);
