@@ -20,7 +20,32 @@ function getDirectories(srcPath: string, rootPath: string): { label: string, val
   return dirs;
 }
 
-export async function addEntry(projectRoot: string) {
+export async function addEntry(projectRoot: string, options?: { name?: string, globs?: string, description?: string }) {
+  if (options?.name) {
+    const baseDir = path.join(projectRoot, '.codebuddy');
+    if (!fs.existsSync(baseDir)) {
+      console.error(pc.red('No .codebuddy directory found. Run `npx create-code-buddy init` first.'));
+      return;
+    }
+    const filePath = path.join(baseDir, options.name.endsWith('.md') ? options.name : `${options.name}.md`);
+    
+    let finalGlobs = '"*.*"';
+    if (options.globs) {
+      finalGlobs = options.globs.split(',').map(s => `"${s.trim().replace(/^"|"$/g, '')}"`).join(', ');
+    }
+    
+    const description = options.description || 'Code Buddy Rule';
+    const ruleName = path.basename(options.name).replace(/\.md$/, '');
+    const fileContent = `---\ndescription: ${description}\nglobs: [${finalGlobs}]\n---\n\n# ${ruleName}\n\n[Add your rule content here]\n`;
+    
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, fileContent);
+    
+    console.log(pc.green(`✔ Created ${path.relative(projectRoot, filePath)}`));
+    await syncAgents(projectRoot);
+    return;
+  }
+
   console.clear();
   intro(pc.bgCyan(pc.black(` create-code-buddy: Add Entry/Directory `)));
 

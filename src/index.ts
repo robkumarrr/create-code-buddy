@@ -81,9 +81,12 @@ Examples:
 
   program
     .command('add')
-    .description('Interactively add a new directory or rule entry')
-    .action(async () => {
-      await addEntry(process.cwd());
+    .description('Add a new rule (interactive by default, scriptable for agents)')
+    .option('-n, --name <name>', 'Name of the rule (e.g. backend/database)')
+    .option('-g, --globs <globs>', 'Target globs (e.g. "*.ts, *.js")')
+    .option('-d, --description <desc>', 'Description of the rule')
+    .action(async (cliOptions) => {
+      await addEntry(process.cwd(), cliOptions);
     });
 
   program

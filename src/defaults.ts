@@ -22,10 +22,13 @@ export const BASELINE_RULES: Record<string, { description: string, globs: string
 You are equipped with a Create-Code-Buddy knowledge base. If the user asks you to add, modify, or delete a project rule or standard, you should NOT edit files directly in hidden agent folders like \`.cursor/rules\` or \`.agents\`.
 
 Instead, follow this workflow:
-1. Edit or create the relevant Markdown file inside the \`.codebuddy/rules/\` directory.
-2. Ensure every rule file begins with YAML frontmatter specifying a \`description\` and \`globs\` (e.g. \`globs: ["*.ts"]\`).
-3. After making the changes, explicitly instruct the user to run the following command in their terminal to compile the updates:
+1. To create a new rule, ALWAYS use the non-interactive CLI command:
+\`\`\`bash
+npx ccb add --name "folder/rule-name" --globs "*.ts, *.js" --description "What this rule does"
+\`\`\`
 
+2. If you need to modify an existing rule, edit the relevant Markdown file inside the \`.codebuddy/\` directory.
+3. After making any manual modifications or deletions in \`.codebuddy/\`, run the compiler to magically sync the changes to all supported IDEs:
 \`\`\`bash
 npx ccb sync
 \`\`\`
