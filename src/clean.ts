@@ -4,11 +4,19 @@ import pc from 'picocolors';
 import { confirm, isCancel } from '@clack/prompts';
 import { updateGitignore } from './sync';
 
-export async function cleanAgents(projectRoot: string) {
+export async function cleanAgents(projectRoot: string, isHard: boolean = false) {
   const folders = ['.cursor/rules', '.agents', '.github/instructions', 'agent-config'];
   
+  if (isHard) {
+    folders.push('.codebuddy');
+  }
+  
+  const message = isHard 
+    ? pc.red('⚠️  WARNING: Factory Reset ⚠️\n') + 'This will permanently delete your ENTIRE .codebuddy/ knowledge base along with all compiled agent folders. There is NO backup and this cannot be undone.\n\nAre you absolutely sure you want to obliterate these files?'
+    : 'This will delete all compiled agent folders (.cursor/rules, .agents, etc) and clean your .gitignore. Your .codebuddy/ source rules will NOT be deleted. Continue?';
+
   const shouldClean = await confirm({
-    message: 'This will delete all compiled agent folders (.cursor/rules, .agents, etc) and clean your .gitignore. Your .codebuddy/ source rules will NOT be deleted. Continue?'
+    message: message
   });
 
   if (isCancel(shouldClean) || !shouldClean) {

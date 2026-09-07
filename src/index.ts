@@ -7,7 +7,7 @@ import { runPrompts } from './prompts';
 import { generateConfig } from './generator';
 import { addEntry } from './add';
 import { listRules } from './list';
-import { syncAgents } from './sync';
+import { syncAgents, getConfig } from './sync';
 import { cleanAgents } from './clean';
 
 async function main() {
@@ -26,15 +26,22 @@ async function main() {
       console.clear();
       intro(pc.bgCyan(pc.black(' create-code-buddy ')));
 
+      const existingConfig = getConfig(process.cwd());
+      if (existingConfig) {
+        console.log(pc.dim('Found existing .codebuddy/config.json. Loading your settings...'));
+      }
+
       let parsedAgents;
       if (cliOptions.agents) {
         parsedAgents = cliOptions.agents.split(',').map((a: string) => a.trim());
+      } else if (existingConfig) {
+        parsedAgents = existingConfig.agents;
       }
 
       const answers = await runPrompts({
         yes: cliOptions.yes,
         agents: parsedAgents,
-        addToGitignore: cliOptions.gitignore !== false
+        addToGitignore: cliOptions.gitignore === false ? false : (existingConfig ? existingConfig.gitignore_compiled_agents : undefined)
       });
 
       if (!answers) {
@@ -56,8 +63,9 @@ async function main() {
   program
     .command('clean')
     .description('Remove compiled agent folders and clean up .gitignore')
-    .action(async () => {
-      await cleanAgents(process.cwd());
+    .option('--hard', 'Factory reset: Also delete your .codebuddy/ source files (Irreversible!)')
+    .action(async (cliOptions) => {
+      await cleanAgents(process.cwd(), cliOptions.hard);
     });
 
   program

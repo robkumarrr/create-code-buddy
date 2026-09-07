@@ -33,6 +33,7 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
           { value: 'copilot', label: 'GitHub Copilot (.github/instructions)' },
           { value: 'generic', label: 'Generic / Claude (agent-config)' }
         ],
+        initialValues: agents.length > 0 ? agents : ['cursor', 'gemini'],
         required: true
       });
       if (isCancel(agentsSelection)) return null;
