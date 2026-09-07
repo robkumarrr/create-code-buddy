@@ -146,13 +146,24 @@ export async function syncAgents(projectRoot: string) {
       const targetBase = path.join(projectRoot, '.agents');
       foldersToIgnore.push('.agents/');
       
-      const expectedPaths = new Set(files.map(f => f.rel));
+      const expectedPaths = new Set(files.map(f => {
+        if (f.rel === 'codebuddy-system.md') return 'skills/codebuddy-system/SKILL.md';
+        return f.rel;
+      }));
       cleanStaleRules(targetBase, expectedPaths);
       
       for (const file of files) {
         const rawContent = fs.readFileSync(file.abs, 'utf8');
         const { attributes, body } = parseFrontmatter(rawContent);
-        const targetAbs = path.join(targetBase, file.rel);
+        
+        let targetRel = file.rel;
+        if (file.rel === 'codebuddy-system.md') {
+          targetRel = 'skills/codebuddy-system/SKILL.md';
+          attributes.name = 'codebuddy-system';
+          attributes.description = attributes.description || 'Instructions for AI agents on how to manage Code Buddy rules';
+        }
+        
+        const targetAbs = path.join(targetBase, targetRel);
         fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
         
         const attrString = Object.entries(attributes).map(([k, v]) => `${k}: ${v}`).join('\n');
