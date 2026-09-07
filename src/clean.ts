@@ -38,5 +38,25 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false) 
   updateGitignore(projectRoot, [], true);
   console.log(pc.dim(`Cleaned .gitignore entries`));
 
-  console.log(pc.green(`\n✔ Cleaned ${deletedCount} compiled agent folders.`));
+  if (isHard) {
+    const pkgPath = path.join(projectRoot, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkgContent = fs.readFileSync(pkgPath, 'utf8');
+        const pkg = JSON.parse(pkgContent);
+        if (pkg.scripts && pkg.scripts.postinstall === 'npx create-code-buddy sync') {
+          delete pkg.scripts.postinstall;
+          if (Object.keys(pkg.scripts).length === 0) {
+            delete pkg.scripts;
+          }
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+          console.log(pc.dim(`Cleaned postinstall script from package.json`));
+        }
+      } catch (err) {
+        // Silently fail if malformed
+      }
+    }
+  }
+
+  console.log(pc.green(`\n✔ Cleaned ${deletedCount} folders.`));
 }

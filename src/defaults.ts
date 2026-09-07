@@ -17,21 +17,13 @@ export const BASELINE_RULES: Record<string, { description: string, globs: string
   'codebuddy-system.md': {
     description: 'Instructions for AI agents on how to manage their own rules',
     globs: '"*.*"',
-    content: `# AI Agent Self-Management
+    content: `# Create-Code-Buddy: AI Instructions
 
-You are equipped with a Create-Code-Buddy knowledge base. If the user asks you to add, modify, or delete a project rule or standard, you should NOT edit files directly in hidden agent folders like \`.cursor/rules\` or \`.agents\`.
+Manage rules exclusively via the \`.codebuddy/\` SSOT folder. DO NOT edit \`.cursor/rules\` or \`.agents\` directly.
 
-Instead, follow this workflow:
-1. To create a new rule, ALWAYS use the non-interactive CLI command:
-\`\`\`bash
-npx ccb add --name "folder/rule-name" --globs "*.ts, *.js" --description "What this rule does"
-\`\`\`
-
-2. If you need to modify an existing rule, edit the relevant Markdown file inside the \`.codebuddy/\` directory.
-3. After making any manual modifications or deletions in \`.codebuddy/\`, run the compiler to magically sync the changes to all supported IDEs:
-\`\`\`bash
-npx ccb sync
-\`\`\`
+- **Create**: Run \`npx ccb add --name "folder/rule" --globs "*.ts" --description "..."\`
+- **Edit/Delete**: Modify or delete the \`.codebuddy/*.md\` files natively.
+- **Sync**: ALWAYS run \`npx ccb sync\` after manual edits to compile changes globally.
 `
   }
 };
