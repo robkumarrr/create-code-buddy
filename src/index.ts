@@ -61,9 +61,6 @@ Examples:
       }
 
       await generateConfig(answers, process.cwd());
-      console.log(pc.dim('\nCompiling rules for your selected agents...'));
-      await syncAgents(process.cwd());
-      
       outro(pc.green('Your Code Buddy SSOT has been generated successfully! 🚀'));
     });
 
