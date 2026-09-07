@@ -27,6 +27,33 @@ This generates your `.codebuddy/` folder with baseline architectural and testing
 
 ---
 
+## 📖 Writing Rules: Globs & Frontmatter
+
+If you look inside the generated Markdown files in `.codebuddy/`, you'll notice a small YAML block at the top of every file:
+
+```markdown
+---
+description: Database query rules and ORM standards
+globs: ["*.ts", "src/db/**/*.ts"]
+---
+
+# Database Rules
+Never use raw SQL...
+```
+
+**What is a "glob"?**  
+"Globs" are just a friendly term for *file patterns*. They tell the AI Agent exactly **when** it should pay attention to a rule. 
+
+For example, you wouldn't want the AI to read through your heavy Database rules when it's just trying to center a `<div>` in CSS! By setting a glob like `["*.ts"]`, the AI knows this rule only applies to TypeScript files. 
+
+- `"*.*"` applies to every file in your project.
+- `"*.tsx, *.jsx"` applies to UI components.
+- `"src/backend/**/*.js"` applies to any JavaScript file inside that specific folder.
+
+*Don't want to type this out manually? Just use the `npx ccb add` command and we'll generate it for you!*
+
+---
+
 ## 🛠️ The CLI Toolkit
 
 All commands can be run using `npx create-code-buddy <command>` or the shorter `npx ccb <command>`.
