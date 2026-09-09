@@ -14,3 +14,22 @@ agent-config/
 .github/instructions/
 
 ideas.txt
+
+# --- Create Code Buddy (Start) ---
+.agents/
+agent-config/
+.github/instructions/
+# --- Create Code Buddy (End) ---
+
+# --- Create Code Buddy (Start) ---
+.agents/
+agent-config/
+.github/instructions/
+# --- Create Code Buddy (End) ---
+
+# --- Create Code Buddy (Start) ---
+.cursor/
+.agents/
+# --- Create Code Buddy (End) ---
+
+coverage/
