@@ -1,92 +1,122 @@
-# 🤖 create-code-buddy
+# 🤖 create-code-buddy (ccb)
 
-`create-code-buddy` is a powerful, interactive scaffolding tool that generates the perfect AI Agent configuration folder for your codebase. It bridges the gap between raw codebase context and what modern AI agents (like Cursor, Gemini Antigravity, and GitHub Copilot) need to write high-quality, framework-specific code for you.
+`create-code-buddy` is the ultimate Single Source of Truth (SSOT) compiler for AI Agent rules.
 
-Instead of writing a massive `.cursorrules` file from scratch, `create-code-buddy` asks you a few questions and instantly generates a **token-optimized, multi-file agent architecture** tailored to your exact stack.
+The AI coding ecosystem is incredibly fragmented. If half your team uses **Cursor** and the other half uses **GitHub Copilot** or **Gemini**, how do you manage your project's AI context? Do you maintain `.cursorrules`, `.github/instructions/`, and `.agents/` separately? 
 
-## ✨ Features
-- **Framework Aware**: Comes with "Golden Templates" for Next.js, Laravel, Node.js, C# .NET, and more.
-- **Agent Ecosystem Support**: Natively supports `.cursor/rules` (Cursor), `.agents/rules` (Gemini Antigravity), `.github/instructions` (Copilot), and standard Markdown (`agent-config/`).
-- **Token Minimizer**: Automatically injects strict globs into `.mdc` files and uses progressive disclosure so your AI doesn't burn tokens reading frontend rules while working on backend code.
-- **AI-Natively Automatable**: Fully scriptable via CLI flags, allowing AI agents to run this package on behalf of users.
+No. With `create-code-buddy`, you write your team's rules exactly **once** in the `.codebuddy/` folder. Then, our CLI instantly compiles and perfectly formats those rules for whatever AI IDE your developers prefer to use.
+
+---
 
 ## 🚀 Quick Start
 
-Run the interactive wizard in the root of your project:
+Run the interactive setup wizard in the root of your project:
 
 ```bash
 npx create-code-buddy init
+# Or use the shortcut alias:
+npx ccb init
 ```
 
-The wizard will guide you through:
-1. **Selecting a Framework** (Next.js, Laravel, Node.js, C# .NET, General, Empty)
-2. **Framework-Specific Questions** (e.g. App Router vs Pages Router, or Express vs NestJS)
-3. **Selecting your AI Agent Ecosystem** (Cursor, Gemini, Copilot, Generic)
-4. **Git Ignore Settings** (Team-wide vs Personal configs)
+The wizard will smoothly guide you through:
+1. **Selecting your AI Agents** (Cursor, Gemini, Copilot, or Generic).
+2. **Git Ignore Settings** (Automatically hiding the compiled outputs).
+3. **Team Automation** (Injecting a `postinstall` script).
 
-That's it! Your agent context is generated and ready to go.
+This generates your `.codebuddy/` folder with baseline architectural and testing rules, and magically compiles them into your local agent folders (like `.cursor/rules/`).
 
-## 🧩 Adding Custom Rules
+---
 
-Need to add a custom rule later (e.g., how to handle payments or authentication)? Use the `add-rule` command:
+## 📖 Writing Rules: Globs & Frontmatter
 
+If you look inside the generated Markdown files in `.codebuddy/`, you'll notice a small YAML block at the top of every file:
+
+```markdown
+---
+description: Database query rules and ORM standards
+globs: ["*.ts", "src/db/**/*.ts"]
+---
+
+# Database Rules
+Never use raw SQL...
+```
+
+**What is a "glob"?**  
+"Globs" are just a friendly term for *file patterns*. They tell the AI Agent exactly **when** it should pay attention to a rule. 
+
+For example, you wouldn't want the AI to read through your heavy Database rules when it's just trying to center a `<div>` in CSS! By setting a glob like `["*.ts"]`, the AI knows this rule only applies to TypeScript files. 
+
+- `"*.*"` applies to every file in your project.
+- `"*.tsx, *.jsx"` applies to UI components.
+- `"src/backend/**/*.js"` applies to any JavaScript file inside that specific folder.
+
+*Don't want to type this out manually? Just use the `npx ccb add` command and we'll generate it for you!*
+
+---
+
+## 🛠️ The CLI Toolkit
+
+All commands can be run using `npx create-code-buddy <command>` or the shorter `npx ccb <command>`.
+
+### 1. The Configuration Wizard (`init` / `edit` / `config`)
 ```bash
-npx create-code-buddy add-rule payments
+npx ccb init
 ```
-This automatically detects your existing agent folder (like `.cursor/rules` or `.agents`) and creates a properly formatted template for your new rule.
+Acts as a smart settings manager. It scaffolds your initial `.codebuddy/` SSOT. If you run it again later, it remembers your choices and acts as a buttery-smooth TUI to let you toggle supported AI agents for your local machine.
+
+### 2. The Knowledge Base Manager (`add`)
+```bash
+npx ccb add
+```
+Never manually create folders or copy-paste frontmatter again. This command opens an interactive menu allowing you to:
+- Create nested directories inside `.codebuddy/`.
+- Add new Markdown entries.
+- Select target Globs (e.g., Backend, Frontend, Testing) via a multiselect menu.
+- Immediately syncs your new rules to your active AI agents.
+
+### 3. The SSOT Compiler (`sync`)
+```bash
+npx ccb sync
+```
+The heart of the tool. It reads your `.codebuddy/` folder and mirrors it perfectly into your IDE's proprietary folder structures (like `.cursor/rules/*.mdc`). 
+*✨ Features **Smart Merge**: It safely overwrites and cleans up stale SSOT rules while permanently protecting any personal, un-synced rules developers might have created in their own `.cursor` folders!*
+
+### 4. The Navigator (`list`)
+```bash
+npx ccb list
+```
+A visual tree explorer for your AI rules. Select any rule in your `.codebuddy/` folder to instantly generate a clickable terminal link that opens the file right in your editor.
+
+### 5. The Slate Wiper (`clean`)
+```bash
+npx ccb clean
+# Or for a full factory reset:
+npx ccb clean --hard
+```
+Safely deletes all compiled/hidden agent folders (like `.cursor/` or `.github/`) and cleans your `.gitignore`. It **protects** your `.codebuddy/` source code. *(Use `--hard` if you want to completely obliterate the SSOT as well).*
+
+---
+
+## 🤝 The "Magic" Team Workflow
+
+Because `.codebuddy/` is an IDE-agnostic Single Source of Truth, **you should commit it to your Git repository!**
+
+When a new Junior Developer joins your team and clones the repo, they don't have to configure anything. During the `npx ccb init` wizard, we ask if you want to add a `postinstall` script. If you select "Yes", we inject this into your `package.json`:
+
+```json
+"scripts": {
+  "postinstall": "npx create-code-buddy sync"
+}
+```
+
+Now, when that new developer runs `npm install`, `create-code-buddy` automatically compiles the team's rules perfectly for their specific AI agent in the background. **Zero-touch onboarding.**
+
+---
 
 ## 🤖 AI Automation (Non-Interactive Mode)
 
 `create-code-buddy` is designed to be fully automatable by other AI agents. If you are an AI agent setting up a workspace for a user, you can bypass the interactive prompts by using the `--yes` (`-y`) flag.
 
 ```bash
-npx create-code-buddy init --yes --framework nextjs --agent cursor --options '{"router":"app","styling":"tailwind"}'
+npx ccb init --yes --agents cursor,gemini
 ```
-
-### CLI Arguments:
-- `--framework` (`-f`): `laravel`, `nextjs`, `nodejs`, `csharp-dotnet`, `general`, `empty`
-- `--agent` (`-a`): `cursor`, `gemini`, `copilot`, `generic`
-- `--options` (`-o`): JSON string of framework-specific options.
-
-*(See [AI_INSTRUCTIONS.md](./AI_INSTRUCTIONS.md) for a full list of framework options)*
-
-## ⚡ Laravel Boost Integration
-If you select **Laravel**, the CLI will automatically ask if you want to install [Laravel Boost](https://github.com/laravel/boost), an official package that provides deep agent integrations and acts as an MCP server. You can choose to install both!
-
-## 🐳 Running via Docker (No Node.js Required)
-
-If you don't have Node.js installed on your machine, you can run `create-code-buddy` entirely via Docker! 
-
-Because the CLI needs to write files to your local repository, you must mount your current directory into the container using the `-v` flag.
-
-First, build or pull the image:
-```bash
-docker build -t create-code-buddy .
-```
-
-Then, run it inside any project directory:
-```bash
-docker run --rm -it -v $(pwd):/workspace create-code-buddy init
-```
-
-*Note: For Homebrew users, a Tap is currently in development. In the meantime, Docker or `npx` are the recommended paths.*
-
-## 📦 Supported Frameworks & Options
-
-### Next.js
-- **Routers:** App Router, Pages Router
-- **Styling:** Tailwind CSS, CSS Modules
-
-### Laravel
-- **Frontend Stacks:** Blade, Livewire, Inertia (Vue/React/Svelte), API Only
-- **Testing:** Pest, PHPUnit
-
-### Node.js
-- **Architecture:** Express.js, NestJS
-- **Language:** TypeScript, JavaScript
-
-### C# .NET
-- **Architecture:** Minimal APIs, Web API Controllers, MVC
-
-### General / Empty
-Start from a proven language-agnostic template, or a completely blank slate with just headings.
