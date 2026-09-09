@@ -26,7 +26,7 @@ describe('syncAgents', () => {
 
   it('should compile rules for selected agents', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockImplementation((pathStr) => {
+    vi.mocked(fs.readFileSync).mockImplementation((pathStr: any) => {
       if ((pathStr as string).endsWith('config.json')) {
         return JSON.stringify({ agents: ['cursor', 'gemini'], gitignore_compiled_agents: true });
       }
@@ -53,7 +53,7 @@ describe('syncAgents', () => {
 
   it('should compile Windsurf rules with standard frontmatter', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockImplementation((pathStr) => {
+    vi.mocked(fs.readFileSync).mockImplementation((pathStr: any) => {
       if ((pathStr as string).endsWith('config.json')) {
         return JSON.stringify({ agents: ['windsurf'], gitignore_compiled_agents: true });
       }
@@ -73,7 +73,7 @@ describe('syncAgents', () => {
 
   it('should compile Cline rules omitting frontmatter for always-on rules', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockImplementation((pathStr) => {
+    vi.mocked(fs.readFileSync).mockImplementation((pathStr: any) => {
       if ((pathStr as string).endsWith('config.json')) {
         return JSON.stringify({ agents: ['cline'], gitignore_compiled_agents: true });
       }
@@ -94,7 +94,7 @@ describe('syncAgents', () => {
 
   it('should compile Cline rules converting globs to paths: block format', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockImplementation((pathStr) => {
+    vi.mocked(fs.readFileSync).mockImplementation((pathStr: any) => {
       if ((pathStr as string).endsWith('config.json')) {
         return JSON.stringify({ agents: ['cline'], gitignore_compiled_agents: true });
       }

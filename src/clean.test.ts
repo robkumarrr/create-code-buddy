@@ -46,7 +46,7 @@ describe('cleanAgents', () => {
       { name: 'generated.mdc', isDirectory: () => false } as any,
       { name: 'personal.mdc', isDirectory: () => false } as any,
     ]);
-    vi.mocked(fs.readFileSync).mockImplementation((filePath) => {
+    vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
       if ((filePath as string).includes('generated')) return `${WATERMARK}\n# Generated`;
       return '# My personal rule — no watermark';
     });
