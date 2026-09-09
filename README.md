@@ -4,7 +4,7 @@
 
   [![npm version](https://img.shields.io/npm/v/create-code-buddy.svg?style=flat-square)](https://www.npmjs.com/package/create-code-buddy)
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-  [![Build Status](https://img.shields.io/github/actions/workflow/status/robkumarrr/create-code-buddy/node.js.yml?style=flat-square)](https://github.com/robkumarrr/create-code-buddy/actions)
+  [![Build Status](https://img.shields.io/github/actions/workflow/status/robkumarrr/create-code-buddy/ci.yml?style=flat-square)](https://github.com/robkumarrr/create-code-buddy/actions)
 </div>
 
 ---
