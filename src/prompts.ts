@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import pc from 'picocolors';
 import { multiselect, select, isCancel } from '@clack/prompts';
 
 export interface PromptAnswers {
@@ -34,17 +35,28 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
 
   while (step < totalSteps) {
     if (step === 0) {
-      const agentsSelection = await multiselect({
-        message: 'Which AI Agents do you want to compile rules for?',
-        options: [
-          { value: 'cursor', label: 'Cursor (.cursor/rules)' },
-          { value: 'gemini', label: 'Gemini (.agents)' },
-          { value: 'copilot', label: 'GitHub Copilot (.github/instructions)' },
-          { value: 'generic', label: 'Generic / Claude (agent-config)' }
-        ],
-        initialValues: agents.length > 0 ? agents : ['cursor', 'gemini'],
-        required: true
-      });
+      let agentsSelection: string[] | symbol;
+      while (true) {
+        agentsSelection = await multiselect({
+          message: 'Which AI Agents do you want to compile rules for?',
+          options: [
+            { value: 'cline',   label: `Cline          ${pc.dim(pc.blue('(.clinerules)'))}` },
+            { value: 'claude',  label: `Claude Code    ${pc.dim(pc.yellow('(.claude/rules)'))}` },
+            { value: 'cursor',  label: `Cursor         ${pc.dim(pc.cyan('(.cursor/rules)'))}` },
+            { value: 'gemini',  label: `Gemini         ${pc.dim(pc.magenta('(.agents)'))}` },
+            { value: 'copilot', label: `GitHub Copilot ${pc.dim(pc.green('(.github/instructions)'))}` },
+            { value: 'windsurf',label: `Windsurf       ${pc.dim(pc.blue('(.windsurf/rules)'))}` },
+          ],
+          initialValues: agents.length > 0 ? agents : ['cursor', 'gemini'],
+          required: false
+        });
+        if (isCancel(agentsSelection)) return null;
+        if ((agentsSelection as string[]).length === 0) {
+          console.log(pc.yellow('  ⚠  Select at least one agent to continue, or press Ctrl+C to exit at any time.'));
+          continue;
+        }
+        break;
+      }
       if (isCancel(agentsSelection)) return null;
       agents = agentsSelection as string[];
       step++;

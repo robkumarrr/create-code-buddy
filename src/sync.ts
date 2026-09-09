@@ -175,6 +175,26 @@ export async function syncAgents(projectRoot: string) {
       }
       console.log(pc.green(`✔ Compiled to Gemini (.agents)`));
     }
+
+    if (agent === 'claude') {
+      const targetBase = path.join(projectRoot, '.claude', 'rules');
+      foldersToIgnore.push('.claude/');
+      
+      const expectedPaths = new Set(files.map(f => f.rel));
+      cleanStaleRules(targetBase, expectedPaths);
+      
+      for (const file of files) {
+        const rawContent = fs.readFileSync(file.abs, 'utf8');
+        const { attributes, body } = parseFrontmatter(rawContent);
+        
+        const targetAbs = path.join(targetBase, file.rel);
+        fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
+        
+        const claudeContent = `---\ndescription: ${attributes.description || 'Code Buddy Rule'}\nglobs: ${attributes.globs || '"*.*"'}\n---\n${WATERMARK}\n${body}`;
+        fs.writeFileSync(targetAbs, claudeContent);
+      }
+      console.log(pc.green(`✔ Compiled to Claude Code (.claude/rules)`));
+    }
     
     if (agent === 'copilot') {
       const targetBase = path.join(projectRoot, '.github', 'instructions');
@@ -199,9 +219,9 @@ export async function syncAgents(projectRoot: string) {
       console.log(pc.green(`✔ Compiled to Copilot (.github/instructions)`));
     }
     
-    if (agent === 'generic') {
-      const targetBase = path.join(projectRoot, 'agent-config');
-      foldersToIgnore.push('agent-config/');
+    if (agent === 'windsurf') {
+      const targetBase = path.join(projectRoot, '.windsurf', 'rules');
+      foldersToIgnore.push('.windsurf/');
       
       const expectedPaths = new Set(files.map(f => f.rel));
       cleanStaleRules(targetBase, expectedPaths);
@@ -213,13 +233,47 @@ export async function syncAgents(projectRoot: string) {
         fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
         
         const attrString = Object.entries(attributes).map(([k, v]) => `${k}: ${v}`).join('\n');
-        const compiledContent = Object.keys(attributes).length > 0 
-          ? `---\n${attrString}\n---\n${WATERMARK}\n${body}` 
+        const compiledContent = Object.keys(attributes).length > 0
+          ? `---\n${attrString}\n---\n${WATERMARK}\n${body}`
           : `${WATERMARK}\n${body}`;
           
         fs.writeFileSync(targetAbs, compiledContent);
       }
-      console.log(pc.green(`✔ Compiled to Generic (agent-config)`));
+      console.log(pc.green(`✔ Compiled to Windsurf (.windsurf/rules)`));
+    }
+
+    if (agent === 'cline') {
+      const targetBase = path.join(projectRoot, '.clinerules');
+      foldersToIgnore.push('.clinerules/');
+
+      const expectedPaths = new Set(files.map(f => f.rel));
+      cleanStaleRules(targetBase, expectedPaths);
+
+      for (const file of files) {
+        const rawContent = fs.readFileSync(file.abs, 'utf8');
+        const { attributes, body } = parseFrontmatter(rawContent);
+        const targetAbs = path.join(targetBase, file.rel);
+        fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
+
+        const globsValue = attributes.globs || '';
+        const isAlwaysOn = !globsValue || globsValue.replace(/["\s\[\]]/g, '') === '*.*';
+
+        if (isAlwaysOn) {
+          // No frontmatter = always active in Cline
+          fs.writeFileSync(targetAbs, `${WATERMARK}\n${body}`);
+        } else {
+          // Convert globs inline array → paths: block YAML array
+          const patterns = globsValue
+            .replace(/^\[|\]$/g, '')
+            .split(',')
+            .map(s => s.trim().replace(/^"|"$/g, ''))
+            .filter(Boolean)
+            .map(p => p.includes('/') ? p : `**/${p}`);
+          const pathsBlock = patterns.map(p => `  - "${p}"`).join('\n');
+          fs.writeFileSync(targetAbs, `---\npaths:\n${pathsBlock}\n---\n${WATERMARK}\n${body}`);
+        }
+      }
+      console.log(pc.green(`✔ Compiled to Cline (.clinerules)`));
     }
   }
 

@@ -54,6 +54,6 @@ describe('listRules', () => {
 
     await listRules('/fake/path');
 
-    expect(prompts.outro).toHaveBeenCalledWith(expect.stringContaining('CMD+Click to edit:'));
+    expect(prompts.outro).toHaveBeenCalledWith(expect.stringContaining('Open this file in your editor:'));
   });
 });

@@ -35,11 +35,24 @@ Examples:
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
     .action(async (cliOptions) => {
       console.clear();
+      
+      const asciiLogo = `
+ _ _  _| _ |_     _| _|   
+(_(_)(_|(/_|_)|_|(_|(_|\\/ 
+                       /  
+`;
+      console.log(pc.cyan(asciiLogo));
       intro(pc.bgCyan(pc.black(' create-code-buddy ')));
 
       const existingConfig = getConfig(process.cwd());
       if (existingConfig) {
-        console.log(pc.dim('Found existing .codebuddy/config.json. Loading your settings...'));
+        console.log(pc.dim('Found existing .codebuddy/config.json. Loading your settings...\n'));
+      } else {
+        console.log(pc.cyan('Welcome to create-code-buddy! 🤖\n'));
+        console.log(pc.white('Instead of manually editing your AI agent\'s rules folder (.cursorrules, .agents, etc),'));
+        console.log(pc.white('you will now write your rules once in a centralized ') + pc.bold(pc.cyan('.codebuddy/')) + pc.white(' folder.'));
+        console.log(pc.white('This wizard configures which agent folders we should auto-compile those rules into.\n'));
+        console.log(pc.dim('(We\'ve pre-selected some defaults for you below, feel free to make your own selections)\n'));
       }
 
       let parsedAgents;
@@ -61,12 +74,12 @@ Examples:
       }
 
       await generateConfig(answers, process.cwd());
-      outro(pc.green('Your Code Buddy SSOT has been generated successfully! 🚀'));
+      outro(pc.green('Code Buddy has been configured successfully! 🚀'));
     });
 
   program
     .command('sync')
-    .description('Compile the SSOT markdown rules into agent-specific folders')
+    .description('Compile the single-source of truth markdown rules into agent-specific folders')
     .action(async () => {
       await syncAgents(process.cwd());
     });
