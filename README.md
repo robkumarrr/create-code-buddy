@@ -1,122 +1,66 @@
-# 🤖 create-code-buddy (ccb)
+<div align="center">
+  <h1>🤖 create-code-buddy</h1>
+  <p><strong>The Universal AI Agent Context Manager</strong></p>
 
-`create-code-buddy` is the ultimate Single Source of Truth (SSOT) compiler for AI Agent rules.
-
-The AI coding ecosystem is incredibly fragmented. If half your team uses **Cursor** and the other half uses **GitHub Copilot** or **Gemini**, how do you manage your project's AI context? Do you maintain `.cursorrules`, `.github/instructions/`, and `.agents/` separately? 
-
-No. With `create-code-buddy`, you write your team's rules exactly **once** in the `.codebuddy/` folder. Then, our CLI instantly compiles and perfectly formats those rules for whatever AI IDE your developers prefer to use.
+  [![npm version](https://img.shields.io/npm/v/create-code-buddy.svg?style=flat-square)](https://www.npmjs.com/package/create-code-buddy)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+  [![Build Status](https://img.shields.io/github/actions/workflow/status/robkumarrr/create-code-buddy/ci.yml?style=flat-square)](https://github.com/robkumarrr/create-code-buddy/actions)
+</div>
 
 ---
+
+Instead of manually editing rules across `.cursorrules`, `.agents`, and `.clinerules`, **create-code-buddy** gives you a Single Source of Truth (SSOT). Write your AI context rules once, and seamlessly compile them across the entire AI agent ecosystem.
 
 ## 🚀 Quick Start
 
-Run the interactive setup wizard in the root of your project:
+Initialize your Code Buddy knowledge base and select your agents:
 
 ```bash
 npx create-code-buddy init
-# Or use the shortcut alias:
-npx ccb init
 ```
 
-The wizard will smoothly guide you through:
-1. **Selecting your AI Agents** (Cursor, Gemini, Copilot, or Generic).
-2. **Git Ignore Settings** (Automatically hiding the compiled outputs).
-3. **Team Automation** (Injecting a `postinstall` script).
-
-This generates your `.codebuddy/` folder with baseline architectural and testing rules, and magically compiles them into your local agent folders (like `.cursor/rules/`).
-
----
-
-## 📖 Writing Rules: Globs & Frontmatter
-
-If you look inside the generated Markdown files in `.codebuddy/`, you'll notice a small YAML block at the top of every file:
-
-```markdown
----
-description: Database query rules and ORM standards
-globs: ["*.ts", "src/db/**/*.ts"]
----
-
-# Database Rules
-Never use raw SQL...
-```
-
-**What is a "glob"?**  
-"Globs" are just a friendly term for *file patterns*. They tell the AI Agent exactly **when** it should pay attention to a rule. 
-
-For example, you wouldn't want the AI to read through your heavy Database rules when it's just trying to center a `<div>` in CSS! By setting a glob like `["*.ts"]`, the AI knows this rule only applies to TypeScript files. 
-
-- `"*.*"` applies to every file in your project.
-- `"*.tsx, *.jsx"` applies to UI components.
-- `"src/backend/**/*.js"` applies to any JavaScript file inside that specific folder.
-
-*Don't want to type this out manually? Just use the `npx ccb add` command and we'll generate it for you!*
-
----
-
-## 🛠️ The CLI Toolkit
-
-All commands can be run using `npx create-code-buddy <command>` or the shorter `npx ccb <command>`.
-
-### 1. The Configuration Wizard (`init` / `edit` / `config`)
+*Don't want the interactive wizard? Run non-interactively:*
 ```bash
-npx ccb init
+npx create-code-buddy init --yes --agents cursor,cline,gemini
 ```
-Acts as a smart settings manager. It scaffolds your initial `.codebuddy/` SSOT. If you run it again later, it remembers your choices and acts as a buttery-smooth TUI to let you toggle supported AI agents for your local machine.
 
-### 2. The Knowledge Base Manager (`add`)
+## 🧠 Supported Agents
+We natively compile your markdown rules into the exact format required by:
+
+- **Cursor** (`.cursor/rules/*.mdc`)
+- **Windsurf** (`.windsurf/rules/*.md`)
+- **Cline** (`.clinerules/*.md`) — *Includes native `paths:` YAML array conversion and always-on global rule parsing!*
+- **Claude Code** (`.claude/rules/*.md`)
+- **Gemini** (`.agents/*.md`)
+- **GitHub Copilot** (`.github/instructions/*.md`)
+
+## 🛠 Core Commands
+
+### `add`
+Quickly scaffold a new rule into your `.codebuddy/` folder.
 ```bash
-npx ccb add
+npx create-code-buddy add
 ```
-Never manually create folders or copy-paste frontmatter again. This command opens an interactive menu allowing you to:
-- Create nested directories inside `.codebuddy/`.
-- Add new Markdown entries.
-- Select target Globs (e.g., Backend, Frontend, Testing) via a multiselect menu.
-- Immediately syncs your new rules to your active AI agents.
 
-### 3. The SSOT Compiler (`sync`)
+### `sync`
+Compiles all rules from your `.codebuddy/` folder into your active AI agent directories. Automatically formats frontmatter to match each specific agent engine.
 ```bash
-npx ccb sync
+npx create-code-buddy sync
 ```
-The heart of the tool. It reads your `.codebuddy/` folder and mirrors it perfectly into your IDE's proprietary folder structures (like `.cursor/rules/*.mdc`). 
-*✨ Features **Smart Merge**: It safely overwrites and cleans up stale SSOT rules while permanently protecting any personal, un-synced rules developers might have created in their own `.cursor` folders!*
 
-### 4. The Navigator (`list`)
+### `list`
+Interactive navigator. View all your SSOT rules and instantly open them in your IDE.
 ```bash
-npx ccb list
+npx create-code-buddy list
 ```
-A visual tree explorer for your AI rules. Select any rule in your `.codebuddy/` folder to instantly generate a clickable terminal link that opens the file right in your editor.
 
-### 5. The Slate Wiper (`clean`)
+### `clean`
+Safely removes generated rules from your agent folders. Personal (non-generated) rules are strictly preserved.
 ```bash
-npx ccb clean
-# Or for a full factory reset:
-npx ccb clean --hard
-```
-Safely deletes all compiled/hidden agent folders (like `.cursor/` or `.github/`) and cleans your `.gitignore`. It **protects** your `.codebuddy/` source code. *(Use `--hard` if you want to completely obliterate the SSOT as well).*
-
----
-
-## 🤝 The "Magic" Team Workflow
-
-Because `.codebuddy/` is an IDE-agnostic Single Source of Truth, **you should commit it to your Git repository!**
-
-When a new Junior Developer joins your team and clones the repo, they don't have to configure anything. During the `npx ccb init` wizard, we ask if you want to add a `postinstall` script. If you select "Yes", we inject this into your `package.json`:
-
-```json
-"scripts": {
-  "postinstall": "npx create-code-buddy sync"
-}
+npx create-code-buddy clean
 ```
 
-Now, when that new developer runs `npm install`, `create-code-buddy` automatically compiles the team's rules perfectly for their specific AI agent in the background. **Zero-touch onboarding.**
+> **Need a factory reset?** Run `npx create-code-buddy clean --hard` to safely backup your SSOT as a `tar.gz` and wipe all agent integrations cleanly.
 
----
-
-## 🤖 AI Automation (Non-Interactive Mode)
-
-`create-code-buddy` is designed to be fully automatable by other AI agents. If you are an AI agent setting up a workspace for a user, you can bypass the interactive prompts by using the `--yes` (`-y`) flag.
-
-```bash
-npx ccb init --yes --agents cursor,gemini
-```
+## 🤝 Contributing
+Check out our [Contributing Guide](CONTRIBUTING.md) to get started!
