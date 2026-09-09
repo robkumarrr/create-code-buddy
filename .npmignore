@@ -1,0 +1,11 @@
+node_modules/
+src/
+.idea/
+.github/
+.env
+.cursor/
+.agents/
+AGENTS.md
+ideas.txt
+vitest.config.ts
+tsconfig.json
