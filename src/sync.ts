@@ -143,27 +143,17 @@ export async function syncAgents(projectRoot: string) {
     }
     
     if (agent === 'gemini') {
-      const targetBase = path.join(projectRoot, '.agents');
+      const targetBase = path.join(projectRoot, '.agents', 'rules');
       foldersToIgnore.push('.agents/');
       
-      const expectedPaths = new Set(files.map(f => {
-        if (f.rel === 'codebuddy-system.md') return 'skills/codebuddy-system/SKILL.md';
-        return f.rel;
-      }));
+      const expectedPaths = new Set(files.map(f => f.rel));
       cleanStaleRules(targetBase, expectedPaths);
       
       for (const file of files) {
         const rawContent = fs.readFileSync(file.abs, 'utf8');
         const { attributes, body } = parseFrontmatter(rawContent);
         
-        let targetRel = file.rel;
-        if (file.rel === 'codebuddy-system.md') {
-          targetRel = 'skills/codebuddy-system/SKILL.md';
-          attributes.name = 'codebuddy-system';
-          attributes.description = attributes.description || 'Instructions for AI agents on how to manage Code Buddy rules';
-        }
-        
-        const targetAbs = path.join(targetBase, targetRel);
+        const targetAbs = path.join(targetBase, file.rel);
         fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
         
         const attrString = Object.entries(attributes).map(([k, v]) => `${k}: ${v}`).join('\n');
@@ -173,7 +163,7 @@ export async function syncAgents(projectRoot: string) {
           
         fs.writeFileSync(targetAbs, compiledContent);
       }
-      console.log(pc.green(`✔ Compiled to Gemini (.agents)`));
+      console.log(pc.green(`✔ Compiled to Gemini (.agents/rules)`));
     }
 
     if (agent === 'claude') {
@@ -200,19 +190,21 @@ export async function syncAgents(projectRoot: string) {
       const targetBase = path.join(projectRoot, '.github', 'instructions');
       foldersToIgnore.push('.github/instructions/');
       
-      const expectedPaths = new Set(files.map(f => f.rel));
+      const expectedPaths = new Set(files.map(f => f.rel.replace(/\.md$/, '.instructions.md')));
       cleanStaleRules(targetBase, expectedPaths);
       
       for (const file of files) {
         const rawContent = fs.readFileSync(file.abs, 'utf8');
         const { attributes, body } = parseFrontmatter(rawContent);
-        const targetAbs = path.join(targetBase, file.rel);
+        
+        const instructionName = file.rel.replace(/\.md$/, '.instructions.md');
+        const targetAbs = path.join(targetBase, instructionName);
         fs.mkdirSync(path.dirname(targetAbs), { recursive: true });
         
-        const attrString = Object.entries(attributes).map(([k, v]) => `${k}: ${v}`).join('\n');
-        const compiledContent = Object.keys(attributes).length > 0 
-          ? `---\n${attrString}\n---\n${WATERMARK}\n${body}` 
-          : `${WATERMARK}\n${body}`;
+        // Copilot uses applyTo instead of globs
+        const globsValue = attributes.globs || '"*.*"';
+        const applyTo = globsValue.replace(/^\[|\]$/g, '').trim();
+        const compiledContent = `---\napplyTo: ${applyTo}\n---\n${WATERMARK}\n${body}`;
           
         fs.writeFileSync(targetAbs, compiledContent);
       }
