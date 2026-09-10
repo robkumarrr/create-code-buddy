@@ -10,7 +10,7 @@ const AGENT_FOLDERS = [
   { value: '.claude/rules',        label: `Claude Code      ${pc.dim(pc.yellow('(.claude/rules)'))}` },
   { value: '.clinerules',          label: `Cline            ${pc.dim(pc.blue('(.clinerules)'))}` },
   { value: '.cursor/rules',        label: `Cursor           ${pc.dim(pc.cyan('(.cursor/rules)'))}` },
-  { value: '.agents',              label: `Gemini           ${pc.dim(pc.magenta('(.agents)'))}` },
+  { value: '.agents/rules',       label: `Gemini           ${pc.dim(pc.magenta('(.agents/rules)'))}` },
   { value: '.github/instructions', label: `GitHub Copilot   ${pc.dim(pc.green('(.github/instructions)'))}` },
   { value: '.windsurf/rules',      label: `Windsurf         ${pc.dim(pc.blue('(.windsurf/rules)'))}` },
 ];
