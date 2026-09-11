@@ -100,6 +100,13 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false) 
     updateGitignore(projectRoot, [], true);
     console.log(pc.dim('  Cleaned .gitignore entries'));
 
+    // Strip the AGENTS.md block
+    try {
+      const { updateAgentsMd } = require('./sync');
+      updateAgentsMd(projectRoot, true);
+    } catch {}
+
+
     const pkgPath = path.join(projectRoot, 'package.json');
     if (fs.existsSync(pkgPath)) {
       try {

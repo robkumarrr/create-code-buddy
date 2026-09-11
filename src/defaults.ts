@@ -16,7 +16,7 @@ export const BASELINE_RULES: Record<string, { description: string, globs: string
   },
   'codebuddy-system.md': {
     description: 'Instructions for AI agents on how to manage their own rules',
-    globs: '"*.*"',
+    globs: '".codebuddy/**"',
     content: `# Create-Code-Buddy: AI Instructions
 
 Manage rules exclusively via the \`.codebuddy/\` SSOT folder. DO NOT edit these compiled directories directly:
