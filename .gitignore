@@ -15,21 +15,16 @@ agent-config/
 
 ideas.txt
 
-# --- Create Code Buddy (Start) ---
-.agents/
-agent-config/
-.github/instructions/
-# --- Create Code Buddy (End) ---
 
-# --- Create Code Buddy (Start) ---
-.agents/
-agent-config/
-.github/instructions/
-# --- Create Code Buddy (End) ---
+
+
+coverage/
 
 # --- Create Code Buddy (Start) ---
 .cursor/
+.clinerules/
 .agents/
+.claude/
+.github/instructions/
+.windsurf/
 # --- Create Code Buddy (End) ---
-
-coverage/
