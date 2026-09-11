@@ -7,22 +7,26 @@ export interface PromptAnswers {
   agents: string[];
   addToGitignore: boolean;
   addPostinstall: boolean;
+  updateAgentsMd?: boolean;
 }
 
 export interface RunPromptsArgs {
   yes?: boolean;
   agents?: string[];
   addToGitignore?: boolean;
+  updateAgentsMd?: boolean;
 }
 
 export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<PromptAnswers | null> {
   const hasPackageJson = fs.existsSync(path.join(process.cwd(), 'package.json'));
+  const hasAgentsMd = fs.existsSync(path.join(process.cwd(), 'AGENTS.md'));
 
   if (initialArgs.yes) {
     return {
       agents: initialArgs.agents || ['cursor', 'gemini'],
       addToGitignore: initialArgs.addToGitignore !== undefined ? initialArgs.addToGitignore : true,
-      addPostinstall: hasPackageJson
+      addPostinstall: hasPackageJson,
+      updateAgentsMd: !!initialArgs.updateAgentsMd
     };
   }
 
@@ -30,11 +34,21 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
   let agents = initialArgs.agents || [];
   let addToGitignore = initialArgs.addToGitignore !== undefined ? initialArgs.addToGitignore : true;
   let addPostinstall = false;
+  let updateAgentsMd = false;
 
-  const totalSteps = hasPackageJson ? 3 : 2;
+  const totalSteps = 2 + (hasPackageJson ? 1 : 0) + (hasAgentsMd ? 1 : 0);
+
+  const stepToType: Record<number, 'agents' | 'gitignore' | 'postinstall' | 'agentsmd'> = {};
+  let currentStepIdx = 0;
+  stepToType[currentStepIdx++] = 'agents';
+  stepToType[currentStepIdx++] = 'gitignore';
+  if (hasPackageJson) stepToType[currentStepIdx++] = 'postinstall';
+  if (hasAgentsMd) stepToType[currentStepIdx++] = 'agentsmd';
 
   while (step < totalSteps) {
-    if (step === 0) {
+    const currentAction = stepToType[step];
+
+    if (currentAction === 'agents') {
       let agentsSelection: string[] | symbol;
       while (true) {
         agentsSelection = await multiselect({
@@ -62,7 +76,7 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
       step++;
     }
 
-    if (step === 1) {
+    if (currentAction === 'gitignore') {
       const gitignoreSelection: any = await select({
         message: 'Do you want to ignore the compiled agent folders in Git? (Recommended)',
         options: [
@@ -82,7 +96,7 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
       step++;
     }
 
-    if (step === 2 && hasPackageJson) {
+    if (currentAction === 'postinstall') {
       const postinstallSelection: any = await select({
         message: 'Add a postinstall script to package.json? (Compiles rules automatically for teammates)',
         options: [
@@ -100,11 +114,32 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
       addPostinstall = postinstallSelection === 'yes';
       step++;
     }
+
+    if (currentAction === 'agentsmd') {
+      const agentsMdSelection: any = await select({
+        message: 'We detected an AGENTS.md file. Can we append a tiny pointer block to it? (Helps Codex & Zed discover rules)',
+        options: [
+          { value: 'yes', label: 'Yes, append a 4-line pointer block at the bottom' },
+          { value: 'no', label: 'No, do not touch AGENTS.md' },
+          { value: 'go_back', label: '⬅️  Go Back' }
+        ],
+        initialValue: updateAgentsMd ? 'yes' : 'no'
+      });
+
+      if (isCancel(agentsMdSelection)) return null;
+      if (agentsMdSelection === 'go_back') {
+        step--;
+        continue;
+      }
+      updateAgentsMd = agentsMdSelection === 'yes';
+      step++;
+    }
   }
 
   return {
     agents,
     addToGitignore,
-    addPostinstall
+    addPostinstall,
+    updateAgentsMd
   };
 }

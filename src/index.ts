@@ -33,6 +33,7 @@ Examples:
     .option('-y, --yes', 'Skip prompts and use default configuration')
     .option('-a, --agents <agents>', 'Comma-separated list of agents to configure (cursor,gemini,copilot,generic)')
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
+    .option('--agents-md', 'Append a pointer block to AGENTS.md (for Codex/Zed discovery)')
     .action(async (cliOptions) => {
       console.clear();
       
@@ -65,7 +66,8 @@ Examples:
       const answers = await runPrompts({
         yes: cliOptions.yes,
         agents: parsedAgents,
-        addToGitignore: cliOptions.gitignore === false ? false : (existingConfig ? existingConfig.gitignore_compiled_agents : undefined)
+        addToGitignore: cliOptions.gitignore === false ? false : (existingConfig ? existingConfig.gitignore_compiled_agents : undefined),
+        updateAgentsMd: cliOptions.agentsMd || (existingConfig ? existingConfig.update_agents_md : undefined)
       });
 
       if (!answers) {
