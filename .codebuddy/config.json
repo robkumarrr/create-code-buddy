@@ -1,0 +1,11 @@
+{
+  "agents": [
+    "cursor",
+    "cline",
+    "gemini",
+    "claude",
+    "copilot",
+    "windsurf"
+  ],
+  "gitignore_compiled_agents": true
+}
