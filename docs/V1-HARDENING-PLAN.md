@@ -13,14 +13,14 @@ rename a one-line change instead of a 54-site find-and-replace.
 
 ## Handoff readiness
 
-Phase 1 is complete and every subsequent phase has an executable spec. **98 tests: 79
-passing, 19 `it.fails` carrying the specification for Phases 2 and 3.**
+Phases 1 and 2 are complete. **103 tests: 86 passing, 17 `it.fails` carrying the
+specification for Phase 3.** (Task 3.3, deselected agents, is done — Phase 2's registry
+loop fixed it as a documented side effect of Task 2.4; its test is promoted and passing.)
 
 | Phase 3 task | Pinned by |
 |---|---|
 | 3.1 Copilot `applyTo` | `sync.test.ts` — applyTo is one comma-joined string |
 | 3.2 Cursor `globs` / `alwaysApply` | `sync.test.ts` — bare comma form, alwaysApply emitted |
-| 3.3 Deselected agents | `sync.test.ts` — compiled folder removed on next sync |
 | 3.4 Scoped `.gitignore` | `sync.test.ts` — `.claude/rules/`, never `.claude/` |
 | 3.5 Exit codes | `cli.test.ts` — real subprocess exit status |
 | 3.6 Unknown agent ids | `cli.test.ts` — rejected, offending id named |
@@ -28,9 +28,16 @@ passing, 19 `it.fails` carrying the specification for Phases 2 and 3.**
 | 3.8 Hard-clean backup | `clean.test.ts` — ignore entry survives and matches |
 | 3.11 Gemini skill | `sync.test.ts` — SKILL.md emitted, legacy orphans collected |
 
-Tasks 3.9 (glob prefixing) and 3.10 (Windsurf format) are deliberately unspecified —
-they are maintainer decisions, flagged in the plan and in the tests. An executing agent
+Tasks 3.9 (glob prefixing), 3.10 (Windsurf format) and 3.12 (Claude Code format, found
+while executing Phase 2) are deliberately unspecified — they are maintainer decisions,
+flagged in the plan and, where a test exists at all, in the tests. An executing agent
 should raise them, not guess.
+
+Each Phase 3 fix lives behind a `legacy-format.ts` call in its adapter
+(`src/adapters/*.ts`) — the fix is: stop calling the legacy shim, call
+`renderFrontmatter`/`joinGlobs` from `core/rule.ts` instead, update the golden snapshot
+in the same commit so the diff shows exactly which bytes changed, and promote that
+adapter's `it.fails`.
 
 **The handoff package is this document plus the test suite on
 `hardening/phase-1-foundation`.** The plan alone is not sufficient; the tests are the
@@ -273,7 +280,31 @@ Review the test suite, not just the fact that it runs.
 
 ---
 
-## PHASE 2 — Adapter registry
+## PHASE 2 — Adapter registry ✅ COMPLETE
+
+Landed on `hardening/phase-1-foundation` (executed by Sonnet, plan and Phase 1 by Opus).
+All five Task 2.6 gates passed. 103 tests: 86 passing, 17 `it.fails` remaining for
+Phase 3. Golden snapshot byte-identical.
+
+**Four findings from execution, already folded into the tasks below:**
+
+1. `Rule` needed one addition — `hasFrontmatter: boolean` — to let Gemini/Windsurf
+   reproduce their exact "omit frontmatter when the source had none" behavior, a fact
+   distinct from `alwaysApply`. See core/rule.ts's doc comment on the field.
+2. Two `it.fails` tests genuinely started passing and were promoted, per the file's own
+   protocol: the block-list-globs fix (adapters now read `Rule.globs` from the real
+   parser) and the deselected-agent GC fix. The second is a real behavior change Task
+   2.4 explicitly bundles in — "fixes the deselect bug for free" — not an accidental
+   regression.
+3. That GC fix surfaced as a `.gitignore`-ordering diff against the golden snapshot: old
+   `sync.ts` ordered ignore folders by `config.agents`'s own order (each config entry
+   drove exactly one `if` branch); the registry loop iterates a fixed order instead. Fix
+   was to reassemble `foldersToIgnore` from `config.agents`'s order after the loop, which
+   reproduces old output for *any* agent ordering, not just the one the golden fixture
+   happened to use — genuinely faithful rather than curve-fit to one test.
+4. Task 1.4's `getMarkdownFiles` consolidation was only half-done — `core/fs.ts` existed
+   but `clean.ts` and `list.ts` still had their own divergent copies. Finished while
+   touching both files anyway for Task 2.5.
 
 **Goal:** collapse six near-identical `if (agent === '...')` blocks
 (`src/sync.ts:122-270`, ~85% duplicated) into one interface plus six small modules.
@@ -495,6 +526,18 @@ files that the collector can no longer see because it only scans `.agents/rules/
 Restore it via the `extraFiles` hook from Task 2.1, **with a test this time.** Also have
 the Gemini adapter collect stale files from the legacy locations so existing users'
 orphans get cleaned up.
+
+### 3.12 — Claude Code's format *(gap found executing Phase 2 — maintainer decision)*
+Section 1's format reference table states Claude Code's target is a `paths:` block list
+— the same shape as Cline — but no task above covers it and no test pins it. The current
+adapter still emits Cursor-style `description`/`globs`, ported verbatim in Phase 2
+(`src/adapters/claude.ts`) precisely because nothing said otherwise.
+
+Two things to settle, not to guess: whether `paths:` is actually correct for Claude
+Code's rule format today (unverified, same caveat as Windsurf's Task 3.10), and whether
+it should carry a `description` line the way Cline's doesn't. Once decided, this is the
+same shape of fix as 3.1/3.2 — replace the legacy-format call in `claude.ts`, add the
+test first.
 
 ---
 
