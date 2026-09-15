@@ -2,6 +2,32 @@ import fs from 'fs';
 import path from 'path';
 import pc from 'picocolors';
 import { multiselect, select, isCancel } from '@clack/prompts';
+import { ADAPTERS } from './adapters';
+
+/**
+ * Colors for this agent-selection prompt, keyed by adapter id — the same
+ * mapping clean.ts uses for its own folder-selection prompt. Kept local
+ * rather than on `AgentAdapter` itself; see clean.ts for why.
+ */
+const AGENT_COLORS: Record<string, (s: string) => string> = {
+  cline: pc.blue,
+  claude: pc.yellow,
+  cursor: pc.cyan,
+  gemini: pc.magenta,
+  copilot: pc.green,
+  windsurf: pc.blue,
+};
+
+/**
+ * The multiselect options for "which agents should we compile for", derived
+ * from the same registry sync.ts and clean.ts read. Previously a
+ * hand-maintained array here, kept separately from clean.ts's own list —
+ * the two had already drifted from each other once.
+ */
+const AGENT_OPTIONS = ADAPTERS.map((adapter) => ({
+  value: adapter.id,
+  label: `${adapter.label.padEnd(15)} ${pc.dim((AGENT_COLORS[adapter.id] ?? pc.dim)(`(${adapter.rulesDir})`))}`,
+}));
 
 export interface PromptAnswers {
   agents: string[];
@@ -39,14 +65,7 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
       while (true) {
         agentsSelection = await multiselect({
           message: 'Which AI Agents do you want to compile rules for?',
-          options: [
-            { value: 'cline',   label: `Cline          ${pc.dim(pc.blue('(.clinerules)'))}` },
-            { value: 'claude',  label: `Claude Code    ${pc.dim(pc.yellow('(.claude/rules)'))}` },
-            { value: 'cursor',  label: `Cursor         ${pc.dim(pc.cyan('(.cursor/rules)'))}` },
-            { value: 'gemini',  label: `Gemini         ${pc.dim(pc.magenta('(.agents)'))}` },
-            { value: 'copilot', label: `GitHub Copilot ${pc.dim(pc.green('(.github/instructions)'))}` },
-            { value: 'windsurf',label: `Windsurf       ${pc.dim(pc.blue('(.windsurf/rules)'))}` },
-          ],
+          options: AGENT_OPTIONS,
           initialValues: agents.length > 0 ? agents : ['cursor', 'gemini'],
           required: false
         });
