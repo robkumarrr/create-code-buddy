@@ -200,6 +200,33 @@ describe('parseRule', () => {
   });
 });
 
+describe('parseRule: hasFrontmatter', () => {
+  it('is false for a file with no frontmatter block at all', () => {
+    expect(parseRule('plain.md', '# Just a heading').rule.hasFrontmatter).toBe(false);
+  });
+
+  it('is true when at least one recognized key is present', () => {
+    expect(
+      parseRule('a.md', '---\ndescription: X\n---\n\nBody').rule.hasFrontmatter,
+    ).toBe(true);
+    expect(
+      parseRule('b.md', '---\nglobs: ["*.ts"]\n---\n\nBody').rule.hasFrontmatter,
+    ).toBe(true);
+  });
+
+  it('is true for a universal-glob rule, distinct from alwaysApply', () => {
+    // A rule can have explicit, non-empty frontmatter that still resolves to
+    // always-apply -- the two facts are independent.
+    const { rule } = parseRule('u.md', '---\ndescription: X\nglobs: ["*.*"]\n---\n\nBody');
+    expect(rule.hasFrontmatter).toBe(true);
+    expect(rule.alwaysApply).toBe(true);
+  });
+
+  it('is false for an empty frontmatter block', () => {
+    expect(parseRule('empty.md', '---\n---\n\nBody').rule.hasFrontmatter).toBe(false);
+  });
+});
+
 describe('renderFrontmatter', () => {
   it('produces parseable YAML for values that need quoting', () => {
     const rendered = renderFrontmatter({

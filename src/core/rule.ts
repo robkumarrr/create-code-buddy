@@ -20,6 +20,19 @@ export interface Rule {
   /** True when the rule should always be in context rather than glob-targeted. */
   alwaysApply: boolean;
   /**
+   * True when the source file had a frontmatter block containing at least one
+   * recognized key. False for a file with no `---` block at all, or an empty
+   * one.
+   *
+   * This is distinct from `alwaysApply`: a rule can have explicit, non-empty
+   * frontmatter that still resolves to always-apply (`globs: ["*.*"]`). It
+   * exists for adapters — currently the Gemini/Windsurf legacy formatter,
+   * see adapters/legacy-format.ts — that omit frontmatter entirely for a rule
+   * whose source had none, rather than backfilling defaults the way Cursor
+   * and Claude do.
+   */
+  hasFrontmatter: boolean;
+  /**
    * Frontmatter keys this model does not interpret, preserved verbatim so
    * passthrough adapters can re-emit them.
    */
@@ -160,6 +173,7 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
         description: DEFAULT_DESCRIPTION,
         globs: [],
         alwaysApply: true,
+        hasFrontmatter: false,
         extra: {},
         body: raw,
       },
@@ -200,6 +214,7 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
         : DEFAULT_DESCRIPTION,
     globs: normalizedGlobs,
     alwaysApply: explicitAlwaysApply ?? impliedAlwaysApply,
+    hasFrontmatter: Object.keys(attributes).length > 0,
     extra,
     body,
   };
