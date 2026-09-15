@@ -30,8 +30,11 @@ import {
  * That keeps "green suite" a trustworthy signal all the way through the
  * refactor. Do not delete these to get green; do not leave the branch red.
  *
- * Expected to flip in PHASE 2 (correct model wired in):  block-list globs
- * Expected to flip in PHASE 3 (targeted fixes):          everything else
+ * PHASE 2 (adapter registry, complete): flipped two tests, both promoted —
+ * block-list globs (adapters now consume Rule.globs from the real parser
+ * instead of the old line-splitter), and the deselected-agent GC fix, which
+ * Task 2.4's full-registry iteration produced as a direct side effect.
+ * PHASE 3 (targeted format fixes): everything else still marked `it.fails`.
  */
 
 const MULTI_GLOB = ruleFile('Testing standards', ['*.test.ts', '*.spec.ts'], '# Testing\n\nUse vitest.');
@@ -175,7 +178,7 @@ describe('format fidelity', () => {
     }
   });
 
-  it.fails('a YAML block list survives the round trip as a targeted rule', async () => {
+  it('a YAML block list survives the round trip as a targeted rule', async () => {
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['cline'],
@@ -186,10 +189,31 @@ describe('format fidelity', () => {
 
     await syncAgents(root);
 
-    // Currently the line-splitting parser reads globs as empty, so this rule is
-    // silently compiled as always-on and applied to every file in the repo.
+    // Promoted from it.fails in Phase 2: adapters now consume Rule.globs from
+    // core/rule.ts's real YAML parser instead of the old line-splitting one,
+    // which read this exact shape as an empty string and silently compiled
+    // the rule as always-on, applied to every file in the repo.
     const fm = readFrontmatter(root, '.clinerules/testing.md');
     expect(fm.paths).toBeDefined();
+  });
+
+  it('a YAML block list resolves to the exact glob patterns it names', async () => {
+    // A new, separate test rather than tightening the assertion above —
+    // editing an existing expectation to fit new behavior is exactly what
+    // the acceptance gate for this phase forbids (docs/V1-HARDENING-PLAN.md
+    // Task 2.6, gate 4).
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['cline'],
+      rules: {
+        'testing.md': '---\ndescription: Testing\nglobs:\n  - "*.test.ts"\n  - "*.spec.ts"\n---\n\n# Testing',
+      },
+    });
+
+    await syncAgents(root);
+
+    const fm = readFrontmatter(root, '.clinerules/testing.md');
+    expect(fm.paths).toEqual(['**/*.test.ts', '**/*.spec.ts']);
   });
 
   it.fails('gemini: compiles the system rule as a native skill', async () => {
@@ -285,7 +309,7 @@ describe('lifecycle', () => {
     expect(second).toEqual(first);
   });
 
-  it.fails('removes a deselected agent\'s compiled folder on the next sync', async () => {
+  it('removes a deselected agent\'s compiled folder on the next sync', async () => {
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['cursor', 'cline'],
@@ -297,9 +321,12 @@ describe('lifecycle', () => {
     seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
     await syncAgents(root);
 
-    // Today these files survive AND lose their .gitignore entry, so stale
-    // generated rules become newly visible to git and get committed as if
-    // they were hand-authored — the exact failure this tool exists to prevent.
+    // Promoted from it.fails in Phase 2. Before Task 2.4's rewrite, these
+    // files survived AND lost their .gitignore entry, so stale generated
+    // rules became newly visible to git and got committed as if they were
+    // hand-authored — the exact failure this tool exists to prevent. Fixed by
+    // iterating every adapter on every sync, active or not, so a deselected
+    // one's own previously compiled files always register as orphans.
     expect(exists(root, '.clinerules/testing.md')).toBe(false);
   });
 });
