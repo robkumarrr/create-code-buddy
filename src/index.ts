@@ -35,6 +35,8 @@ Examples:
     .option('-y, --yes', 'Skip prompts and use default configuration')
     .option('-a, --agents <agents>', 'Comma-separated list of agents to configure (cursor,gemini,copilot,generic)')
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
+    .option('--postinstall', 'Add a postinstall script to package.json (compiles rules automatically for teammates)')
+    .option('--no-postinstall', 'Do not add a postinstall script (default under --yes)')
     .action(async (cliOptions) => {
       console.clear();
       
@@ -76,7 +78,8 @@ Examples:
       const answers = await runPrompts({
         yes: cliOptions.yes,
         agents: parsedAgents,
-        addToGitignore: cliOptions.gitignore === false ? false : (existingConfig ? existingConfig.gitignore_compiled_agents : undefined)
+        addToGitignore: cliOptions.gitignore === false ? false : (existingConfig ? existingConfig.gitignore_compiled_agents : undefined),
+        addPostinstall: cliOptions.postinstall
       });
 
       if (!answers) {

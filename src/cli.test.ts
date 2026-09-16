@@ -106,7 +106,7 @@ describe('agent id validation', () => {
 describe('--yes must not modify package.json without consent', () => {
   const PKG = JSON.stringify({ name: 'demo', version: '1.0.0' }, null, 2);
 
-  it.fails('does not add a postinstall script by default', () => {
+  it('does not add a postinstall script by default', () => {
     const root = makeWorkspace({ 'package.json': PKG });
 
     expect(run(root, ['init', '--yes', '--agents', 'cursor']).status).toBe(0);
@@ -117,7 +117,7 @@ describe('--yes must not modify package.json without consent', () => {
     expect(JSON.parse(readFile(root, 'package.json')).scripts?.postinstall).toBeUndefined();
   });
 
-  it.fails('adds a postinstall script when --postinstall is passed', () => {
+  it('adds a postinstall script when --postinstall is passed', () => {
     const root = makeWorkspace({ 'package.json': PKG });
 
     // The status assertion matters: without it, commander aborting on an
@@ -128,7 +128,7 @@ describe('--yes must not modify package.json without consent', () => {
     expect(JSON.parse(readFile(root, 'package.json')).scripts?.postinstall).toContain('sync');
   });
 
-  it.fails('honours --no-postinstall explicitly', () => {
+  it('honours --no-postinstall explicitly', () => {
     const root = makeWorkspace({ 'package.json': PKG });
 
     // `--no-postinstall` is not a defined option today, so commander exits with

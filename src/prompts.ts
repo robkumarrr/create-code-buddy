@@ -39,6 +39,7 @@ export interface RunPromptsArgs {
   yes?: boolean;
   agents?: string[];
   addToGitignore?: boolean;
+  addPostinstall?: boolean;
 }
 
 export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<PromptAnswers | null> {
@@ -48,7 +49,12 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
     return {
       agents: initialArgs.agents || ['cursor', 'gemini'],
       addToGitignore: initialArgs.addToGitignore !== undefined ? initialArgs.addToGitignore : true,
-      addPostinstall: hasPackageJson
+      // Defaults to false (Task 3.7): --yes used to force this to true
+      // whenever a package.json existed, with no flag to decline, so an
+      // agent following our own non-interactive instructions could mutate a
+      // user's package.json without ever asking. --postinstall/--no-postinstall
+      // opt in or out explicitly; hasPackageJson no longer drives the default.
+      addPostinstall: initialArgs.addPostinstall === true
     };
   }
 
