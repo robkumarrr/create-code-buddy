@@ -3,6 +3,7 @@ import path from 'path';
 import pc from 'picocolors';
 import { text, select, intro, outro, isCancel, multiselect } from '@clack/prompts';
 import { syncAgents } from './sync';
+import { fail } from './core/report';
 
 function getDirectories(srcPath: string, rootPath: string): { label: string, value: string }[] {
   let dirs: { label: string, value: string }[] = [];
@@ -24,7 +25,7 @@ export async function addEntry(projectRoot: string, options?: { name?: string, g
   if (options?.name) {
     const baseDir = path.join(projectRoot, '.codebuddy');
     if (!fs.existsSync(baseDir)) {
-      console.error(pc.red('No .codebuddy directory found. Run `npx create-code-buddy init` first.'));
+      fail('No .codebuddy directory found. Run `npx create-code-buddy init` first.');
       return;
     }
     const filePath = path.join(baseDir, options.name.endsWith('.md') ? options.name : `${options.name}.md`);
@@ -52,6 +53,7 @@ export async function addEntry(projectRoot: string, options?: { name?: string, g
   const baseDir = path.join(projectRoot, '.codebuddy');
   if (!fs.existsSync(baseDir)) {
     outro(pc.red('No .codebuddy directory found. Run `npx create-code-buddy init` first.'));
+    process.exitCode = 1;
     return;
   }
 

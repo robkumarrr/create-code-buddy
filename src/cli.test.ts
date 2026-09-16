@@ -42,12 +42,12 @@ function run(cwd: string, args: string[]): RunResult {
 afterEach(() => cleanupWorkspaces());
 
 describe('exit codes', () => {
-  it.fails('sync without a config exits non-zero', () => {
+  it('sync without a config exits non-zero', () => {
     const root = makeWorkspace();
     expect(run(root, ['sync']).status).not.toBe(0);
   });
 
-  it.fails('add without a config exits non-zero', () => {
+  it('add without a config exits non-zero', () => {
     const root = makeWorkspace();
     expect(run(root, ['add', '--name', 'thing']).status).not.toBe(0);
   });

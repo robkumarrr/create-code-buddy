@@ -14,6 +14,7 @@ export async function listRules(projectRoot: string = process.cwd()) {
 
   if (!fs.existsSync(codebuddyDir)) {
     outro(pc.red(`No .codebuddy folder found. Please run 'npx create-code-buddy init' first.`));
+    process.exitCode = 1;
     return;
   }
 

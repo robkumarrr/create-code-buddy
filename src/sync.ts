@@ -4,6 +4,7 @@ import pc from 'picocolors';
 import { SSOT_DIR, CONFIG_FILE, WATERMARK, GITIGNORE_START, GITIGNORE_END } from './core/constants';
 import { getRuleFiles, writeFileDeep } from './core/fs';
 import { parseRule, type Rule } from './core/rule';
+import { fail } from './core/report';
 import { ADAPTERS } from './adapters';
 
 export interface CodeBuddyConfig {
@@ -79,7 +80,7 @@ function cleanStaleRules(targetBase: string, expectedRelativePaths: Set<string>)
 export async function syncAgents(projectRoot: string) {
   const config = getConfig(projectRoot);
   if (!config) {
-    console.error(pc.red('No .codebuddy/config.json found. Run `npx create-code-buddy init` first.'));
+    fail('No .codebuddy/config.json found. Run `npx create-code-buddy init` first.');
     return;
   }
 

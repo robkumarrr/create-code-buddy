@@ -419,13 +419,14 @@ describe('gitignore', () => {
 });
 
 describe('failure modes', () => {
-  it.fails('sets a non-zero exit code when there is no config', async () => {
+  it('sets a non-zero exit code when there is no config', async () => {
     const root = makeWorkspace();
 
     await syncAgents(root);
 
-    // Every error path currently returns silently with exit code 0, so nothing
-    // is detectable in CI — and we recommend wiring sync into postinstall.
+    // Every error path used to return silently with exit code 0, so nothing
+    // was detectable in CI -- and we recommend wiring sync into postinstall.
+    // Fixed via core/report.ts's fail(), Task 3.5.
     expect(process.exitCode).toBe(1);
   });
 
