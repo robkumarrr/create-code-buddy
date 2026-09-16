@@ -33,7 +33,7 @@ const AGENT_FOLDERS = ADAPTERS.map((adapter) => ({
   label: `${adapter.label.padEnd(15)} ${pc.dim((AGENT_COLORS[adapter.id] ?? pc.dim)(`(${adapter.rulesDir})`))}`,
 }));
 
-export async function cleanAgents(projectRoot: string, isHard: boolean = false) {
+export async function cleanAgents(projectRoot: string, isHard: boolean = false, force: boolean = false) {
   if (isHard) {
     // ── HARD RESET ──────────────────────────────────────────────
     const codebuddyDir = path.join(projectRoot, SSOT_DIR);
@@ -50,26 +50,29 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false) 
     }
     console.log('');
 
-    const firstConfirm = await confirm({ message: 'Are you absolutely sure you want to factory reset everything?' });
-    if (isCancel(firstConfirm) || !firstConfirm) {
-      console.log(pc.yellow('Factory reset cancelled.'));
-      return;
-    }
+    if (!force) {
+      const firstConfirm = await confirm({ message: 'Are you absolutely sure you want to factory reset everything?' });
+      if (isCancel(firstConfirm) || !firstConfirm) {
+        console.log(pc.yellow('Factory reset cancelled.'));
+        return;
+      }
 
-    const secondConfirm = await confirm({ message: pc.red('Last chance — this cannot be undone. Proceed?') });
-    if (isCancel(secondConfirm) || !secondConfirm) {
-      console.log(pc.yellow('Factory reset cancelled.'));
-      return;
+      const secondConfirm = await confirm({ message: pc.red('Last chance — this cannot be undone. Proceed?') });
+      if (isCancel(secondConfirm) || !secondConfirm) {
+        console.log(pc.yellow('Factory reset cancelled.'));
+        return;
+      }
     }
 
     // Create tar.gz backup before nuking
+    let backupCreated = false;
     if (fs.existsSync(codebuddyDir)) {
       try {
         const { execSync } = await import('child_process');
         const backupPath = path.join(projectRoot, backupName);
         execSync(`tar -czf "${backupPath}" -C "${projectRoot}" ${SSOT_DIR}`);
         console.log(pc.green(`\n  ✔ Backup created: `) + pc.cyan(backupName));
-        updateGitignore(projectRoot, ['*.codebuddy-backup.tar.gz'], false);
+        backupCreated = true;
       } catch {
         console.log(pc.yellow('  Warning: Could not create backup. Proceeding anyway.'));
       }
@@ -91,7 +94,19 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false) 
       }
     }
 
+    // Strip the compiled-folder entries first -- everything they pointed at
+    // was just deleted -- then, separately, add the backup's own entry. Doing
+    // both through one `remove: true` call was the first of two bugs here:
+    // `updateGitignore` with `remove: true` never writes a new block
+    // regardless of what's passed for foldersToIgnore, so the backup entry
+    // added earlier was stripped straight back out a few lines later.
     updateGitignore(projectRoot, [], true);
+    if (backupCreated) {
+      // The second bug: `*.codebuddy-backup.tar.gz` requires the filename to
+      // literally END with ".codebuddy-backup.tar.gz" -- it never matched
+      // ".codebuddy-backup-<timestamp>.tar.gz", timestamp or no.
+      updateGitignore(projectRoot, ['.codebuddy-backup-*.tar.gz'], false);
+    }
     console.log(pc.dim('  Cleaned .gitignore entries'));
 
     const pkgPath = path.join(projectRoot, 'package.json');

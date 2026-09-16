@@ -230,7 +230,7 @@ describe('hard reset', () => {
     expect(pkg.scripts.test).toBe('vitest');
   });
 
-  it.fails('leaves an ignore entry that actually matches the backup filename', async () => {
+  it('leaves an ignore entry that actually matches the backup filename', async () => {
     const root = await syncedWorkspace(['cursor']);
     vi.mocked(confirm).mockResolvedValue(true);
 
@@ -239,13 +239,13 @@ describe('hard reset', () => {
     const backup = fs.readdirSync(root).find((f) => f.includes('codebuddy-backup'));
     const gitignore = readFile(root, '.gitignore');
 
-    // Two bugs compound here (plan task 3.8):
-    //   1. the backup entry is written, then stripped again when the managed
-    //      block is rebuilt a few lines later, so it never survives;
-    //   2. the pattern is `*.codebuddy-backup.tar.gz`, which could not match
-    //      `.codebuddy-backup-<timestamp>.tar.gz` even if it did survive.
-    // Net effect: a tarball of the user's entire rule set is left untracked-but-
-    // unignored, ready to be committed by the next `git add -A`.
+    // Promoted from it.fails (Task 3.8). Two bugs used to compound here: the
+    // backup entry was written, then stripped again a few lines later when
+    // the managed block was rebuilt with `remove: true`; and even if it had
+    // survived, the pattern `*.codebuddy-backup.tar.gz` could never match
+    // `.codebuddy-backup-<timestamp>.tar.gz`. Net effect: a tarball of the
+    // user's entire rule set was left untracked-but-unignored, ready to be
+    // committed by the next `git add -A`.
     expect(backup).toBeDefined();
     expect(gitignore).toContain('.codebuddy-backup-');
   });

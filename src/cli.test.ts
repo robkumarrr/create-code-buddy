@@ -158,3 +158,31 @@ describe('--no-gitignore', () => {
     expect(readFile(root, '.gitignore')).not.toContain('Create Code Buddy');
   });
 });
+
+describe('clean --hard safety (Task 3.8)', () => {
+  // The `run()` harness spawns with stdin: 'ignore', which is exactly what a
+  // non-interactive shell (a git hook, a CI step) looks like: not a TTY.
+  // clean --hard's two confirm() prompts would otherwise hang reading from
+  // that closed stdin forever, rather than failing.
+
+  it('fails clearly instead of hanging when stdin is not a TTY and --force is absent', () => {
+    const root = makeWorkspace();
+    run(root, ['init', '--yes', '--agents', 'cursor']);
+
+    const result = run(root, ['clean', '--hard']);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stdout + result.stderr).toMatch(/force/i);
+    expect(exists(root, '.codebuddy')).toBe(true);
+  });
+
+  it('proceeds without prompting when --force is passed', () => {
+    const root = makeWorkspace();
+    run(root, ['init', '--yes', '--agents', 'cursor']);
+
+    const result = run(root, ['clean', '--hard', '--force']);
+
+    expect(result.status).toBe(0);
+    expect(exists(root, '.codebuddy')).toBe(false);
+  });
+});

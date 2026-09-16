@@ -102,8 +102,21 @@ Examples:
     .command('clean')
     .description('Remove compiled agent folders and clean up .gitignore')
     .option('--hard', 'Factory reset: Also delete your .codebuddy/ source files (Irreversible!)')
+    .option('--force', 'Skip the --hard confirmation prompts (required in a non-interactive shell)')
     .action(async (cliOptions) => {
-      await cleanAgents(process.cwd(), cliOptions.hard);
+      // clean --hard's confirmations read from stdin, which a non-interactive
+      // shell (a git hook, a CI step) either closes or never sends anything
+      // on -- without this check that would hang rather than fail. --force
+      // exists to skip both prompts in exactly that case; require it
+      // explicitly rather than silently proceeding unconfirmed.
+      if (cliOptions.hard && !process.stdin.isTTY && !cliOptions.force) {
+        fail(
+          'clean --hard needs interactive confirmation and stdin is not a TTY. ' +
+            'Re-run with --force to skip the prompts in a non-interactive shell.',
+        );
+        return;
+      }
+      await cleanAgents(process.cwd(), cliOptions.hard, cliOptions.force);
     });
 
   program
