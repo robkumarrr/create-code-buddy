@@ -108,6 +108,11 @@ export async function syncAgents(projectRoot: string) {
     const expectedPaths = active ? new Set(rules.map((rule) => adapter.outputPath(rule))) : new Set<string>();
     cleanStaleRules(targetBase, expectedPaths);
 
+    // Runs regardless of active/inactive, like cleanStaleRules above -- an
+    // orphan left in a now-abandoned output location is still an orphan
+    // whether or not the agent that made it is currently selected.
+    adapter.collectLegacyOrphans?.(projectRoot);
+
     if (!active) continue;
 
     for (const rule of rules) {

@@ -216,7 +216,7 @@ describe('format fidelity', () => {
     expect(fm.paths).toEqual(['**/*.test.ts', '**/*.spec.ts']);
   });
 
-  it.fails('gemini: compiles the system rule as a native skill', async () => {
+  it('gemini: compiles the system rule as a native skill', async () => {
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['gemini'],
@@ -232,7 +232,7 @@ describe('format fidelity', () => {
     expect(readFile(root, '.agents/skills/codebuddy-system/SKILL.md')).toContain(WATERMARK);
   });
 
-  it.fails('gemini: collects orphans left in the pre-refactor locations', async () => {
+  it('gemini: collects orphans left in the pre-refactor locations', async () => {
     const root = makeWorkspace();
     seedProject(root, { agents: ['gemini'], rules: { 'testing.md': MULTI_GLOB } });
 

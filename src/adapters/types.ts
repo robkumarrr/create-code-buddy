@@ -39,12 +39,26 @@ export interface AgentAdapter {
    * to project root. Should be watermarked so they are recognized as
    * generated output.
    *
-   * No adapter implements this yet. It exists so plan Task 3.11 (restoring
-   * Gemini's SKILL.md) is additive — implement this method on one adapter —
-   * rather than another change to the sync loop itself. Garbage collection
-   * for extraFiles is intentionally not wired up in Phase 2, since there is
-   * nothing yet to collect; the adapter that first uses this must also decide
-   * how its own extra-file tree gets swept for orphans.
+   * Written additively alongside the normal per-rule output, not as a
+   * replacement for it — see gemini.ts's implementation (Task 3.11) for the
+   * one adapter that uses this today, and why. Garbage collection for a
+   * source rule that disappears is not wired up generically; an adapter
+   * using this for something longer-lived than one restored feature should
+   * revisit that.
    */
   extraFiles?(rules: Rule[]): { path: string; content: string }[];
+
+  /**
+   * Optional cleanup for files this adapter wrote to a now-abandoned
+   * location, before that location existed as a modelled part of this
+   * interface. Runs on every sync, active or not — an orphan is an orphan
+   * whether or not the agent that made it is still selected — separately
+   * from the normal `rulesDir`-scoped garbage collection.
+   *
+   * Exists for Gemini alone today (Task 3.11): rules used to compile
+   * straight into `.agents/` before moving to `.agents/rules/`, and existing
+   * users still have those orphans on disk where the normal scan can no
+   * longer see them.
+   */
+  collectLegacyOrphans?(projectRoot: string): void;
 }
