@@ -57,7 +57,7 @@ afterEach(() => {
 });
 
 describe('format fidelity', () => {
-  it.fails('cursor: writes .mdc with a bare comma-joined globs line', async () => {
+  it('cursor: writes .mdc with a bare comma-joined globs line', async () => {
     const root = makeWorkspace();
     seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
 
@@ -76,7 +76,7 @@ describe('format fidelity', () => {
     expect(contents).toContain(WATERMARK);
   });
 
-  it.fails('cursor: emits alwaysApply for a universal rule', async () => {
+  it('cursor: emits alwaysApply for a universal rule', async () => {
     const root = makeWorkspace();
     seedProject(root, { agents: ['cursor'], rules: { 'architecture.md': UNIVERSAL } });
 
@@ -87,7 +87,7 @@ describe('format fidelity', () => {
     );
   });
 
-  it.fails('copilot: applyTo is one comma-joined string, and the file is valid YAML', async () => {
+  it('copilot: applyTo is one comma-joined string, and the file is valid YAML', async () => {
     const root = makeWorkspace();
     seedProject(root, { agents: ['copilot'], rules: { 'testing.md': MULTI_GLOB } });
 

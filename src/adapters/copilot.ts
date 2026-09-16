@@ -1,15 +1,19 @@
 import type { AgentAdapter } from './types';
 import type { Rule } from '../core/rule';
 import { WATERMARK } from '../core/constants';
-import { legacyApplyToField } from './legacy-format';
+import { renderFrontmatter, joinGlobs } from '../core/rule';
 
 /**
- * Ported verbatim from the old `if (agent === 'copilot')` block in sync.ts.
+ * Plan Task 3.1 (highest severity). The old block emitted
+ * `applyTo: "*.ts", "*.js"` for more than one glob — not valid YAML, since a
+ * frontmatter value can't be two quoted scalars back to back. Two of the four
+ * baseline rules this tool ships (conventions, testing) broke on install as
+ * a result.
  *
- * `legacyApplyToField` reproduces the exact bug this format has today: for
- * more than one glob it emits `applyTo: "*.ts", "*.js"`, which is not valid
- * YAML. Plan Task 3.1 replaces this call with `joinGlobs` + `renderFrontmatter`,
- * emitting one single-quoted, comma-joined scalar instead.
+ * Now goes through `renderFrontmatter`, which writes real, parseable YAML:
+ * one single-quoted, comma-joined scalar. Also adds `description`, per the
+ * plan's verified format reference (section 1) — the old block never emitted
+ * one for Copilot at all.
  */
 const copilot: AgentAdapter = {
   id: 'copilot',
@@ -22,7 +26,9 @@ const copilot: AgentAdapter = {
   },
 
   render(rule: Rule): string {
-    return `---\napplyTo: ${legacyApplyToField(rule.globs)}\n---\n${WATERMARK}\n${rule.body}`;
+    const applyTo = rule.globs.length > 0 ? joinGlobs(rule.globs) : '*.*';
+    const frontmatter = renderFrontmatter({ description: rule.description, applyTo });
+    return `${frontmatter}${WATERMARK}\n${rule.body}`;
   },
 };
 

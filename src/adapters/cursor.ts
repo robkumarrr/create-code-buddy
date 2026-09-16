@@ -1,16 +1,24 @@
 import type { AgentAdapter } from './types';
 import type { Rule } from '../core/rule';
 import { WATERMARK } from '../core/constants';
-import { legacyGlobsField } from './legacy-format';
+import { joinGlobs } from '../core/rule';
 
 /**
- * Ported verbatim from the old `if (agent === 'cursor')` block in sync.ts.
+ * Plan Task 3.2. Two fixes:
  *
- * Cursor's `.mdc` frontmatter is deliberately not strict YAML — see plan
- * Task 3.2 — so its eventual fixed format (a bare, unquoted comma-joined
- * globs line) still won't be YAML, just a different non-YAML string. Task
- * 3.2 changes `legacyGlobsField` here to `joinGlobs`; it does not move this
- * adapter onto `renderFrontmatter`.
+ * 1. `globs` now uses the bare, comma-joined form Cursor's own docs and the
+ *    wider ecosystem emit (`globs: *.ts,*.js`), replacing the YAML-array form
+ *    the old block wrote (`globs: ["*.ts", "*.js"]`) — which parsed, but
+ *    wasn't the convention.
+ * 2. `alwaysApply: true` is now emitted when `rule.alwaysApply` is set; the
+ *    old block dropped this key entirely, since it never modelled the
+ *    concept at all.
+ *
+ * Cursor's `.mdc` frontmatter is deliberately NOT strict YAML — `globs:
+ * *.ts` is an unresolved alias to a YAML parser — so this is hand-built,
+ * like the old code, rather than going through `renderFrontmatter`. Quoting
+ * the globs to make it valid YAML would put literal quote characters inside
+ * the glob pattern as Cursor reads it.
  */
 const cursor: AgentAdapter = {
   id: 'cursor',
@@ -23,7 +31,9 @@ const cursor: AgentAdapter = {
   },
 
   render(rule: Rule): string {
-    return `---\ndescription: ${rule.description}\nglobs: ${legacyGlobsField(rule.globs)}\n---\n${WATERMARK}\n${rule.body}`;
+    const globsLine = rule.globs.length > 0 ? joinGlobs(rule.globs) : '*.*';
+    const alwaysApplyLine = rule.alwaysApply ? '\nalwaysApply: true' : '';
+    return `---\ndescription: ${rule.description}\nglobs: ${globsLine}${alwaysApplyLine}\n---\n${WATERMARK}\n${rule.body}`;
   },
 };
 
