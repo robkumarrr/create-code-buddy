@@ -60,7 +60,7 @@ describe('exit codes', () => {
 });
 
 describe('agent id validation', () => {
-  it.fails('rejects an unknown agent id instead of reporting success', () => {
+  it('rejects an unknown agent id instead of reporting success', () => {
     const root = makeWorkspace();
     const result = run(root, ['init', '--yes', '--agents', 'notanagent']);
 
@@ -70,7 +70,7 @@ describe('agent id validation', () => {
     expect(result.status).not.toBe(0);
   });
 
-  it.fails('names the offending id and lists the valid ones', () => {
+  it('names the offending id and lists the valid ones', () => {
     const root = makeWorkspace();
     const output = run(root, ['init', '--yes', '--agents', 'notanagent']);
     const combined = output.stdout + output.stderr;
@@ -79,7 +79,7 @@ describe('agent id validation', () => {
     expect(combined).toMatch(/cursor/);
   });
 
-  it.fails('rejects the whole run if any id in the list is invalid', () => {
+  it('rejects the whole run if any id in the list is invalid', () => {
     const root = makeWorkspace();
     const result = run(root, ['init', '--yes', '--agents', 'cursor,notanagent']);
 

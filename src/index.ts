@@ -9,6 +9,8 @@ import { addEntry } from './add';
 import { listRules } from './list';
 import { syncAgents, getConfig } from './sync';
 import { cleanAgents } from './clean';
+import { ADAPTER_IDS } from './adapters';
+import { fail } from './core/report';
 
 async function main() {
   program
@@ -58,6 +60,15 @@ Examples:
       let parsedAgents;
       if (cliOptions.agents) {
         parsedAgents = cliOptions.agents.split(',').map((a: string) => a.trim());
+
+        const unknownIds = parsedAgents.filter((id: string) => !ADAPTER_IDS.includes(id));
+        if (unknownIds.length > 0) {
+          fail(
+            `Unknown agent id${unknownIds.length > 1 ? 's' : ''}: ${unknownIds.join(', ')}. ` +
+              `Valid agents are: ${ADAPTER_IDS.join(', ')}.`,
+          );
+          return;
+        }
       } else if (existingConfig) {
         parsedAgents = existingConfig.agents;
       }
