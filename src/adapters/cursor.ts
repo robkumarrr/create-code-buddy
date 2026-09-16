@@ -24,7 +24,7 @@ const cursor: AgentAdapter = {
   id: 'cursor',
   label: 'Cursor',
   rulesDir: '.cursor/rules',
-  ignorePaths: ['.cursor/'],
+  ignorePaths: ['.cursor/rules/'],
 
   outputPath(rule: Rule): string {
     return rule.relPath.replace(/\.md$/, '.mdc');

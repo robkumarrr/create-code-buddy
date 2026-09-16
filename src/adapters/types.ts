@@ -20,14 +20,10 @@ export interface AgentAdapter {
   rulesDir: string;
 
   /**
-   * Exact paths to write into .gitignore. MUST be scoped to generated
-   * output — '.claude/rules/', never '.claude/'. See plan Task 3.4: ignoring a
-   * whole agent folder silently stops tracking the user's own settings,
+   * Exact paths to write into .gitignore. Scoped to generated output —
+   * '.claude/rules/', never '.claude/' (plan Task 3.4). Ignoring a whole
+   * agent folder would silently stop tracking the user's own settings,
    * commands and skills that live alongside the generated rules.
-   *
-   * NOTE: every adapter below still returns the wider, unscoped path for now.
-   * Phase 2 is a pure refactor — narrowing these is Task 3.4's job, done
-   * adapter by adapter so each fix is a reviewable diff of its own.
    */
   ignorePaths: string[];
 

@@ -16,7 +16,7 @@ const windsurf: AgentAdapter = {
   id: 'windsurf',
   label: 'Windsurf',
   rulesDir: '.windsurf/rules',
-  ignorePaths: ['.windsurf/'],
+  ignorePaths: ['.windsurf/rules/'],
 
   outputPath(rule: Rule): string {
     return rule.relPath;

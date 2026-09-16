@@ -17,7 +17,7 @@ const gemini: AgentAdapter = {
   id: 'gemini',
   label: 'Gemini',
   rulesDir: '.agents/rules',
-  ignorePaths: ['.agents/'],
+  ignorePaths: ['.agents/rules/'],
 
   outputPath(rule: Rule): string {
     return rule.relPath;

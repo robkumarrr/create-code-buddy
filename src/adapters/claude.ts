@@ -15,7 +15,7 @@ const claude: AgentAdapter = {
   id: 'claude',
   label: 'Claude Code',
   rulesDir: '.claude/rules',
-  ignorePaths: ['.claude/'],
+  ignorePaths: ['.claude/rules/'],
 
   outputPath(rule: Rule): string {
     return rule.relPath;

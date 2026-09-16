@@ -369,7 +369,7 @@ describe('gitignore', () => {
     expect(contents).not.toContain('Create Code Buddy');
   });
 
-  it.fails('scopes ignore entries to generated rule directories only', async () => {
+  it('scopes ignore entries to generated rule directories only', async () => {
     const root = makeWorkspace({ '.gitignore': 'node_modules/\n' });
     seedProject(root, {
       agents: ['claude', 'cursor', 'windsurf'],

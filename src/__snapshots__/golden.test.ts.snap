@@ -278,12 +278,12 @@ node_modules/
 dist/
 
 # --- Create Code Buddy (Start) ---
-.cursor/
-.claude/
+.cursor/rules/
+.claude/rules/
 .clinerules/
 .github/instructions/
-.agents/
-.windsurf/
+.agents/rules/
+.windsurf/rules/
 # --- Create Code Buddy (End) ---
 
 
