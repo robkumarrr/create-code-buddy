@@ -414,9 +414,32 @@ proceeding.
 
 ---
 
-## PHASE 3 — Correctness
+## PHASE 3 — Correctness ⏸ 8 of 11 done, 3 blocked on maintainer decisions
 
-Every task here has a test already written in Phase 1. Turn them green one at a time.
+Landed on `hardening/phase-1-foundation` (Sonnet). 105 tests: 104 passing, 1 `it.fails`
+remaining. Done: 3.1, 3.2, 3.3 (Phase 2), 3.4, 3.5, 3.6, 3.7, 3.8, 3.11. Every fix
+verified against the real built binary in a scratch directory, not just the mocked
+suite — each commit records what was run and what came out.
+
+**Blocked, not skipped:**
+
+- **3.9 / 3.10 (Cline, Windsurf)** — parked pending a scope decision: keep them
+  first-class, or mark them experimental for this launch. See the conversation for the
+  reasoning; nothing in the adapters changed either way.
+- **3.12 (Claude format)** — still open; unrelated to the 3.9/3.10 decision, needs its
+  own answer (see the task itself).
+
+**One finding from executing 3.11**, folded into the task below: a true redirect (skill
+file *replacing* the normal rule output, matching the original 515aaa3 exactly) would
+need `outputPath()` to return a path outside its own `rulesDir` via `../`, which the
+`rulesDir`-scoped garbage collector can never discover again if the source rule is later
+deleted — trading the orphan bug this task fixes for a new one nothing tests today. Went
+additive instead (skill written alongside the normal output, not replacing it) and
+documented the tradeoff in `gemini.ts`. Revisit if `extraFiles` grows more adapters.
+
+Every task here has a test already written in Phase 1 (or added just before implementing
+it, when Phase 1 hadn't captured that particular clause — 3.8's `--force` flag, notably).
+Turn them green one at a time.
 
 ### 3.1 — Copilot `applyTo` *(highest severity)*
 `src/sync.ts:206`. Emit `applyTo: '<globs joined by comma>'` — one single-quoted
