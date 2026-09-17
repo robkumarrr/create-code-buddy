@@ -39,7 +39,7 @@ describe('addEntry (non-interactive)', () => {
 
     await addEntry(root, { name: 'database', globs: '*.sql, *.prisma', description: 'DB rules' });
 
-    const content = readFile(root, '.codebuddy/database.md');
+    const content = readFile(root, '.codebuddy/rules/database.md');
     expect(content).toContain('description: DB rules');
     expect(content).toContain('globs: ["*.sql", "*.prisma"]');
     expect(content).toContain('# database');
@@ -51,9 +51,9 @@ describe('addEntry (non-interactive)', () => {
 
     await addEntry(root, { name: 'backend/database', description: 'DB rules' });
 
-    expect(exists(root, '.codebuddy/backend/database.md')).toBe(true);
+    expect(exists(root, '.codebuddy/rules/backend/database.md')).toBe(true);
     // The heading uses the basename, not the full nested path.
-    expect(readFile(root, '.codebuddy/backend/database.md')).toContain('# database');
+    expect(readFile(root, '.codebuddy/rules/backend/database.md')).toContain('# database');
   });
 
   it('does not double the .md extension when the name already has one', async () => {
@@ -62,7 +62,7 @@ describe('addEntry (non-interactive)', () => {
 
     await addEntry(root, { name: 'database.md' });
 
-    expect(exists(root, '.codebuddy/database.md')).toBe(true);
+    expect(exists(root, '.codebuddy/rules/database.md')).toBe(true);
     expect(exists(root, '.codebuddy/database.md.md')).toBe(false);
   });
 
@@ -72,7 +72,7 @@ describe('addEntry (non-interactive)', () => {
 
     await addEntry(root, { name: 'mixed', globs: '*.ts, "*.tsx", *.jsx ' });
 
-    expect(readFile(root, '.codebuddy/mixed.md')).toContain('globs: ["*.ts", "*.tsx", "*.jsx"]');
+    expect(readFile(root, '.codebuddy/rules/mixed.md')).toContain('globs: ["*.ts", "*.tsx", "*.jsx"]');
   });
 
   it('defaults globs to "*.*" and description to "Code Buddy Rule" when omitted', async () => {
@@ -81,7 +81,7 @@ describe('addEntry (non-interactive)', () => {
 
     await addEntry(root, { name: 'bare' });
 
-    const content = readFile(root, '.codebuddy/bare.md');
+    const content = readFile(root, '.codebuddy/rules/bare.md');
     expect(content).toContain('globs: ["*.*"]');
     expect(content).toContain('description: Code Buddy Rule');
   });

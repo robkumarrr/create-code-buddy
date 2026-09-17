@@ -4,7 +4,7 @@ import pc from 'picocolors';
 import { text, select, intro, outro, isCancel, multiselect } from '@clack/prompts';
 import { syncAgents } from './sync';
 import { fail } from './core/report';
-import { TOOL_NAME, SSOT_DIR } from './core/constants';
+import { TOOL_NAME, SSOT_DIR, RULES_SUBDIR, rulesRoot } from './core/constants';
 import { DEFAULT_DESCRIPTION } from './core/rule';
 
 function getDirectories(srcPath: string, rootPath: string): { label: string, value: string }[] {
@@ -25,8 +25,8 @@ function getDirectories(srcPath: string, rootPath: string): { label: string, val
 
 export async function addEntry(projectRoot: string, options?: { name?: string, globs?: string, description?: string }) {
   if (options?.name) {
-    const baseDir = path.join(projectRoot, SSOT_DIR);
-    if (!fs.existsSync(baseDir)) {
+    const baseDir = rulesRoot(projectRoot);
+    if (!fs.existsSync(path.join(projectRoot, SSOT_DIR))) {
       fail(`No ${SSOT_DIR} directory found. Run \`npx ${TOOL_NAME} init\` first.`);
       return;
     }
@@ -52,12 +52,13 @@ export async function addEntry(projectRoot: string, options?: { name?: string, g
   console.clear();
   intro(pc.bgCyan(pc.black(` ${TOOL_NAME}: Add Entry/Directory `)));
 
-  const baseDir = path.join(projectRoot, SSOT_DIR);
-  if (!fs.existsSync(baseDir)) {
+  const baseDir = rulesRoot(projectRoot);
+  if (!fs.existsSync(path.join(projectRoot, SSOT_DIR))) {
     outro(pc.red(`No ${SSOT_DIR} directory found. Run \`npx ${TOOL_NAME} init\` first.`));
     process.exitCode = 1;
     return;
   }
+  fs.mkdirSync(baseDir, { recursive: true });
 
   const action = await select({
     message: 'What would you like to create?',

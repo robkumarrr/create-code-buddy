@@ -9,6 +9,7 @@ import { addEntry } from './add';
 import { listRules } from './list';
 import { syncAgents, getConfig } from './sync';
 import { cleanAgents } from './clean';
+import { migrate } from './migrate';
 import { ADAPTER_IDS } from './adapters';
 import { fail } from './core/report';
 import { TOOL_NAME, TOOL_VERSION, SSOT_DIR, CONFIG_FILE } from './core/constants';
@@ -26,6 +27,7 @@ Examples:
   $ npx ${TOOL_NAME} sync         # Manually compile rules
   $ npx ${TOOL_NAME} clean        # Delete compiled folders
   $ npx ${TOOL_NAME} list         # View and navigate rules
+  $ npx ${TOOL_NAME} migrate      # Move an older layout into .codebuddy/rules/
 `);
 
   program
@@ -130,6 +132,14 @@ Examples:
     .option('-d, --description <desc>', 'Description of the rule')
     .action(async (cliOptions) => {
       await addEntry(process.cwd(), cliOptions);
+    });
+
+  program
+    .command('migrate')
+    .description(`Move rules from an older flat ${SSOT_DIR}/ layout into ${SSOT_DIR}/rules/`)
+    .option('--apply', 'Actually move the files (without this, only shows what would change)')
+    .action(async (cliOptions) => {
+      await migrate(process.cwd(), cliOptions.apply);
     });
 
   program

@@ -120,7 +120,7 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false, 
 
     // The pointer would otherwise survive the thing it points at, telling
     // agents to read a .codebuddy/ that no longer exists.
-    updateAgentsMd(projectRoot, [], false);
+    updateAgentsMd(projectRoot, [], [], false);
 
     const pkgPath = path.join(projectRoot, 'package.json');
     if (fs.existsSync(pkgPath)) {
@@ -228,7 +228,7 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false, 
   }
 
   updateGitignore(projectRoot, [], true);
-  updateAgentsMd(projectRoot, [], false);
+  updateAgentsMd(projectRoot, [], [], false);
   console.log(pc.dim('\n  Cleaned .gitignore entries'));
   console.log(pc.green(`\n✔ Cleaned ${deletedCount} generated file${deletedCount !== 1 ? 's' : ''}.\n`));
 }

@@ -1,3 +1,5 @@
+import path from 'path';
+
 /**
  * Single source of truth for every literal that identifies this tool on disk.
  *
@@ -40,9 +42,34 @@ function readPackageVersion(): string {
 
 export const TOOL_VERSION = readPackageVersion();
 
-/** The single-source-of-truth directory holding the user's authored rules. */
+/** The single-source-of-truth directory holding the user's authored content. */
 export const SSOT_DIR = '.codebuddy';
 export const CONFIG_FILE = 'config.json';
+
+/**
+ * The recognized subdirectories of the SSOT, and the only ones this tool
+ * reads. A folder name here is a promise about where its contents end up:
+ * `rules/` is copied into every agent's own rules folder, `specs/` stays put
+ * and is linked from AGENTS.md instead.
+ *
+ * Deliberately a closed set. The tool can only place content it understands
+ * the destination for — there is no meaningful agent folder to compile a
+ * hypothetical `.codebuddy/prompts/` into. Organize freely *inside* `rules/`;
+ * its nesting is preserved in the output.
+ */
+export const RULES_SUBDIR = 'rules';
+export const SPECS_SUBDIR = 'specs';
+export const SSOT_SUBDIRS = [RULES_SUBDIR, SPECS_SUBDIR] as const;
+
+/** Where authored rules live — the only directory that gets compiled. */
+export function rulesRoot(projectRoot: string): string {
+  return path.join(projectRoot, SSOT_DIR, RULES_SUBDIR);
+}
+
+/** Where specs live. Read for the AGENTS.md index; never compiled. */
+export function specsRoot(projectRoot: string): string {
+  return path.join(projectRoot, SSOT_DIR, SPECS_SUBDIR);
+}
 
 /**
  * Stamped into every generated file. `clean` and the stale-rule collector use

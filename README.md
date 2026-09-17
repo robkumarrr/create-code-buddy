@@ -24,6 +24,32 @@ npx create-code-buddy init
 npx create-code-buddy init --yes --agents cursor,cline,gemini
 ```
 
+## 📁 What lives where
+
+Everything is sourced from one folder. The two subfolders differ in *how* they reach
+an agent, not in how important they are:
+
+```
+.codebuddy/
+├── config.json
+├── rules/      → copied into every agent's rules folder
+│   ├── conventions.md
+│   └── backend/database.md      (nest however you like)
+└── specs/      → stays put; agents are pointed at it, not given a copy
+    └── mcp-server.md
+```
+
+**Rules** are standing guidance — "always do this", or "do this when touching these
+files." They're small and they're compiled everywhere.
+
+**Specs** are what you're building and where it stands. They're listed by path and
+`status:` in `AGENTS.md` so an agent can open the one that matters, rather than
+carrying every spec you've ever written in context on every turn.
+
+Only `rules/` and `specs/` are recognized. A folder name is a promise about where its
+contents go, and the tool can only keep that promise for the two it knows how to
+place — anything else gets a warning rather than being skipped in silence.
+
 ## 🧠 Supported Agents
 We natively compile your markdown rules into the exact format required by:
 
@@ -41,7 +67,7 @@ Beyond the adapters above, we write a short **rule index** into your repo's `AGE
 Aider, Devin Desktop, Zed and 20+ others.
 
 It's a pointer, not a copy: each rule's path, description and scope, one line each. The
-rule text stays in `.codebuddy/` and the agent opens only what's relevant, instead of
+rule text stays in `.codebuddy/rules/` and the agent opens only what's relevant, instead of
 every rule riding along in context on every turn. Only the block between the
 `create-code-buddy` markers is ever rewritten — anything you wrote around it is left
 alone. Opt out with `--no-agents-md`.
@@ -61,13 +87,16 @@ alone. Opt out with `--no-agents-md`.
 ## 🛠 Core Commands
 
 ### `add`
-Quickly scaffold a new rule into your `.codebuddy/` folder.
+Quickly scaffold a new rule into `.codebuddy/rules/`.
 ```bash
 npx create-code-buddy add
 ```
 
 ### `sync`
-Compiles all rules from your `.codebuddy/` folder into your active AI agent directories. Automatically formats frontmatter to match each specific agent engine.
+Compiles everything in `.codebuddy/rules/` into your active AI agent directories,
+formatting frontmatter to match each engine, and refreshes the index in `AGENTS.md`.
+Generated files that no longer have a source are removed; anything you wrote by hand
+is left alone.
 ```bash
 npx create-code-buddy sync
 ```
@@ -76,6 +105,15 @@ npx create-code-buddy sync
 Interactive navigator. View all your SSOT rules and instantly open them in your IDE.
 ```bash
 npx create-code-buddy list
+```
+
+### `migrate`
+For projects created before rules moved into `.codebuddy/rules/`. Moves loose
+`.codebuddy/*.md` files into `rules/`, keeping any nesting. Shows you the plan first
+and changes nothing until you pass `--apply`; it never runs on its own.
+```bash
+npx create-code-buddy migrate          # dry run
+npx create-code-buddy migrate --apply
 ```
 
 ### `clean`

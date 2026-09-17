@@ -1,6 +1,7 @@
 ---
 description: Technical specification for the Official V1 Hivemind Rebrand and Migration system
 globs: ["src/**/*.ts"]
+status: parked
 ---
 
 # Official V1 Migration (Code Buddy to Hivemind)

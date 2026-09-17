@@ -3,7 +3,7 @@ import path from 'path';
 import pc from 'picocolors';
 import { intro, outro, select, isCancel } from '@clack/prompts';
 import { exec } from 'child_process';
-import { SSOT_DIR, TOOL_NAME } from './core/constants';
+import { SSOT_DIR, TOOL_NAME, rulesRoot } from './core/constants';
 import { getRuleFiles } from './core/fs';
 
 export async function listRules(projectRoot: string = process.cwd()) {
@@ -18,7 +18,7 @@ export async function listRules(projectRoot: string = process.cwd()) {
     return;
   }
 
-  const files = getRuleFiles(codebuddyDir).map((f) => f.abs);
+  const files = getRuleFiles(rulesRoot(projectRoot)).map((f) => f.abs);
 
   if (files.length === 0) {
     outro(pc.yellow(`No markdown rules found in ${SSOT_DIR}.`));

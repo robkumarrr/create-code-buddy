@@ -7,5 +7,6 @@
     "copilot",
     "windsurf"
   ],
-  "gitignore_compiled_agents": true
+  "gitignore_compiled_agents": true,
+  "agents_md": true
 }

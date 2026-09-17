@@ -33,6 +33,13 @@ export interface Rule {
    */
   hasFrontmatter: boolean;
   /**
+   * Lifecycle of a spec — `planned`, `in progress`, `parked`, `done`, or
+   * anything else the author writes. Shown beside the spec in the AGENTS.md
+   * index so an agent can tell live work from shelved work. Empty for rules,
+   * which have no lifecycle.
+   */
+  status: string;
+  /**
    * Frontmatter keys this model does not interpret, preserved verbatim so
    * passthrough adapters can re-emit them.
    */
@@ -174,6 +181,7 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
         globs: [],
         alwaysApply: true,
         hasFrontmatter: false,
+        status: '',
         extra: {},
         body: raw,
       },
@@ -199,7 +207,7 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
     );
   }
 
-  const { description, globs, alwaysApply, ...extra } = attributes;
+  const { description, globs, alwaysApply, status, ...extra } = attributes;
 
   const normalizedGlobs = normalizeGlobs(globs);
   const explicitAlwaysApply = coerceBoolean(alwaysApply);
@@ -231,6 +239,7 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
     globs: normalizedGlobs,
     alwaysApply: contradictsEmptyGlobs ? true : (explicitAlwaysApply ?? impliedAlwaysApply),
     hasFrontmatter: Object.keys(attributes).length > 0,
+    status: typeof status === 'string' ? status.trim() : '',
     extra,
     body,
   };

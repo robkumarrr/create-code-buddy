@@ -28,8 +28,8 @@ rather than assumed — see each Phase 3 task for sources and dates.
   renaming it is a breaking change for no functional gain.
 - **`postinstall` vs `prepare`** — `npx create-code-buddy sync` on postinstall runs on
   every `npm ci`, hits the network and fails offline (Task 3.7). Flagged, not changed.
-- **SSOT layout** — `.codebuddy/` currently mixes durable rules with transient planning
-  documents, and compiles all of them to all six agents. See the note below.
+- **SSOT layout** — resolved after Phase 5, in Phase 6 below. `.codebuddy/` now splits
+  into `rules/` and `specs/`; only `rules/` is compiled.
 
 **Next up:** an MCP server, on its own branch. MCP is what makes the tool reliably usable
 by any agent — a rules file asking an agent to shell out is documentation; a typed
@@ -729,6 +729,67 @@ Researched directly (agents.md, GitHub, 2026-09-17), not assumed:
 
 ---
 
+## PHASE 6 — Split the SSOT ✅ COMPLETE
+
+Not in the original plan. It came out of the Phase 5 work: once `AGENTS.md` listed
+every rule, it was obvious that half of what it listed weren't rules.
+
+### The problem
+
+`.codebuddy/` held two different kinds of document and copied both into all six agent
+folders. `specs/v1-migration.md` triggered on any `.ts` file, so it loaded on every
+TypeScript task to describe a rename that was parked. `specs/adopt-existing-rules.md`
+pointed at files that don't exist, so it never loaded at all. Between them, ~4.9KB of
+the 6.6KB total, copied six times.
+
+Worth fixing before the MCP server, because MCP exposes this structure to agents.
+
+### What changed
+
+| Area | Change |
+|---|---|
+| `src/core/constants.ts` | `RULES_SUBDIR` / `SPECS_SUBDIR`, `SSOT_SUBDIRS`, `rulesRoot()` / `specsRoot()` |
+| `src/core/rule.ts` | Parses `status:` on specs |
+| `src/sync.ts` | Rules from `rules/`, specs for the index only; warns on unrecognized subdirs |
+| `src/core/agents-md.ts` | Takes specs; renders a `## Project specs` section with status |
+| `src/migrate.ts` | New command (dry-run default) for the pre-`rules/` layout |
+| `src/test/workspace.ts` | `seedProject` writes to `rules/`, gained a `specs` option |
+
+**Rules are copied. Specs are pointed at.** Both live in `.codebuddy/` — the difference
+is delivery, not location. An agent sees the spec list in `AGENTS.md` every session,
+with each spec's status, and opens the one that matters.
+
+Only `rules/` and `specs/` are recognized at the top level. A folder name is a promise
+about where its contents go, and the tool can only keep it for types it can place.
+Nest freely *inside* `rules/`.
+
+### Reporting, fixed alongside
+
+Previously, `sync` with no rules found deleted every compiled file across all six
+folders, printed `✔ Compiled to Cursor`, and exited 0. That's also the exact state an
+un-migrated upgrade lands in, so it had to be fixed first:
+
+1. No rules but generated output exists → refuse, exit non-zero, delete nothing, point
+   at `migrate` or `clean` depending on which applies.
+2. `✔ Compiled 5 rules → Cursor (.cursor/rules)` instead of a bare tick.
+3. Deletions are reported: `(removed 2 stale)`.
+
+### The load-bearing check
+
+Rule paths became relative to `rules/` rather than `.codebuddy/`. Done right, every
+compiled file lands exactly where it did before. The golden snapshot changed **only**
+in its `AGENTS.md` block — every other compiled file byte-identical. A moved path would
+have meant the change was wrong.
+
+Verified end to end against the built binary: fresh `init` scaffolds `rules/`; a spec
+with a status appears in `AGENTS.md` and in zero agent folders; and the upgrade path
+(`sync` refuses → `migrate` dry run → `--apply` → `sync`) restores identical output.
+
+Dogfooded here: `migrate --apply` moved 5 rules, and the existing watermark GC
+de-compiled the stale spec copies from all six folders with no new code.
+
+---
+
 ## Out of scope — parked deliberately
 
 - **The Hivemind rename.** Parked. Task 4.5 makes it cheap later.
@@ -752,6 +813,7 @@ Researched directly (agents.md, GitHub, 2026-09-17), not assumed:
 | 3 | Correctness fixes | Low — each has a failing test | — |
 | 4 | Hygiene, docs, coverage gate | Low | — |
 | 5 | AGENTS.md / CLAUDE.md adapters | Low–med — new capability | — |
+| 6 | Split SSOT into rules/ + specs/ | Med — path change, snapshot-guarded | — |
 
 **Definition of done for the whole plan:** `npm test` green, coverage gate passing, and
 a clean-room run of `init → add → sync → deselect an agent → sync → clean` producing

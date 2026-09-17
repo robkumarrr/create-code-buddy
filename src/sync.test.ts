@@ -292,7 +292,7 @@ describe('format fidelity', () => {
     // rulesDir-scoped collector never looked there -- deleting the source rule
     // left it stranded on disk, reachable by neither sync nor clean. That is
     // the exact failure the skill restoration existed to fix, in miniature.
-    require('fs').unlinkSync(require('path').join(root, '.codebuddy/codebuddy-system.md'));
+    require('fs').unlinkSync(require('path').join(root, '.codebuddy/rules/codebuddy-system.md'));
     await syncAgents(root);
 
     expect(exists(root, '.agents/rules/codebuddy-system.md')).toBe(false);
@@ -336,7 +336,7 @@ describe('lifecycle', () => {
     await syncAgents(root);
     expect(exists(root, '.cursor/rules/testing.mdc')).toBe(true);
 
-    require('fs').unlinkSync(path.join(root, '.codebuddy/testing.md'));
+    require('fs').unlinkSync(path.join(root, '.codebuddy/rules/testing.md'));
     await syncAgents(root);
 
     expect(exists(root, '.cursor/rules/testing.mdc')).toBe(false);
@@ -350,7 +350,7 @@ describe('lifecycle', () => {
     writeFile(root, '.cursor/rules/my-own.mdc', '# Mine\n\nNot generated, do not touch.');
 
     await syncAgents(root);
-    require('fs').unlinkSync(path.join(root, '.codebuddy/testing.md'));
+    require('fs').unlinkSync(path.join(root, '.codebuddy/rules/testing.md'));
     await syncAgents(root);
 
     expect(exists(root, '.cursor/rules/my-own.mdc')).toBe(true);
@@ -482,6 +482,96 @@ describe('gitignore', () => {
   });
 });
 
+describe('specs are indexed, never compiled', () => {
+  const SPEC = '---\ndescription: MCP server\nstatus: in progress\n---\n\n# MCP\n\nDetails.';
+
+  it('lists a spec in AGENTS.md with its status', async () => {
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['cursor'],
+      rules: { 'testing.md': MULTI_GLOB },
+      specs: { 'mcp-server.md': SPEC },
+    });
+
+    await syncAgents(root);
+
+    const agentsMd = readFile(root, 'AGENTS.md');
+    expect(agentsMd).toContain('.codebuddy/specs/mcp-server.md');
+    expect(agentsMd).toContain('MCP server');
+    expect(agentsMd).toContain('in progress');
+  });
+
+  it('never copies a spec into any agent folder', async () => {
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['cursor', 'claude', 'cline', 'copilot', 'gemini', 'windsurf'],
+      rules: { 'testing.md': MULTI_GLOB },
+      specs: { 'mcp-server.md': SPEC },
+    });
+
+    await syncAgents(root);
+
+    // The whole point: the spec body stays in one place instead of being
+    // duplicated six times and injected regardless of relevance.
+    const everythingCompiled = tree(root)
+      .filter((f) => !f.startsWith('.codebuddy/') && f !== 'AGENTS.md')
+      .map((f) => readFile(root, f))
+      .join('\n');
+    expect(everythingCompiled).not.toContain('Details.');
+    expect(tree(root).filter((f) => f.includes('mcp-server'))).toEqual([
+      '.codebuddy/specs/mcp-server.md',
+    ]);
+  });
+
+  it('omits the specs section entirely when there are none', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
+
+    await syncAgents(root);
+
+    expect(readFile(root, 'AGENTS.md')).not.toContain('Project specs');
+  });
+
+  it('warns about a folder it does not recognize instead of ignoring it', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
+    writeFile(root, '.codebuddy/prompts/thing.md', '# Not a rule');
+
+    const logged: string[] = [];
+    vi.mocked(console.log).mockImplementation((msg?: unknown) => {
+      logged.push(String(msg));
+    });
+
+    await syncAgents(root);
+
+    expect(logged.join('\n')).toContain('prompts');
+    // And it is definitely not compiled.
+    expect(exists(root, '.cursor/rules/thing.mdc')).toBe(false);
+  });
+});
+
+describe('cleanup tidies up after itself', () => {
+  it('removes the directory left empty by de-compiling a nested rule', async () => {
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['cursor'],
+      rules: { 'testing.md': MULTI_GLOB, 'backend/database.md': SINGLE_GLOB },
+    });
+    await syncAgents(root);
+    expect(exists(root, '.cursor/rules/backend/database.mdc')).toBe(true);
+
+    require('fs').rmSync(require('path').join(root, '.codebuddy/rules/backend'), {
+      recursive: true,
+    });
+    await syncAgents(root);
+
+    // Leaving an empty `backend/` behind in all six agent trees is litter the
+    // user has to wonder about.
+    expect(exists(root, '.cursor/rules/backend')).toBe(false);
+    expect(exists(root, '.cursor/rules/testing.mdc')).toBe(true);
+  });
+});
+
 describe('refuses to wipe everything (safety guard)', () => {
   it('stops instead of deleting all output when every source rule is gone', async () => {
     const root = makeWorkspace();
@@ -491,7 +581,7 @@ describe('refuses to wipe everything (safety guard)', () => {
 
     // Simulates the two ways this happens in practice: an accidental delete,
     // or an upgrade where the tool starts looking somewhere the rules aren't.
-    require('fs').rmSync(require('path').join(root, '.codebuddy/testing.md'));
+    require('fs').rmSync(require('path').join(root, '.codebuddy/rules/testing.md'));
 
     await syncAgents(root);
 
@@ -508,10 +598,10 @@ describe('refuses to wipe everything (safety guard)', () => {
     seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
     await syncAgents(root);
 
-    require('fs').rmSync(require('path').join(root, '.codebuddy/testing.md'));
+    require('fs').rmSync(require('path').join(root, '.codebuddy/rules/testing.md'));
     await syncAgents(root);
 
-    expect(readFile(root, 'AGENTS.md')).toContain('.codebuddy/testing.md');
+    expect(readFile(root, 'AGENTS.md')).toContain('.codebuddy/rules/testing.md');
   });
 
   it('still syncs normally when there are no rules AND no previous output', async () => {

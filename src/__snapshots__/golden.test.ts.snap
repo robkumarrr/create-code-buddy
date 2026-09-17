@@ -346,14 +346,14 @@ Use vitest.
 
 ## Project rules
 
-This project's coding rules live in \`.codebuddy/\`. Read the ones relevant to what
+This project's coding rules live in \`.codebuddy/rules/\`. Read the ones relevant to what
 you are working on — each is listed below with the files it applies to.
 
-- \`.codebuddy/architecture.md\` — Architecture (always applies)
-- \`.codebuddy/plain.md\` — Code Buddy Rule (always applies)
-- \`.codebuddy/backend/database.md\` — DB rules (applies to \`*.sql\`, \`*.prisma\`)
-- \`.codebuddy/conventions.md\` — Conventions (applies to \`*.ts\`)
-- \`.codebuddy/testing.md\` — Testing standards (applies to \`*.test.ts\`, \`*.spec.ts\`)
+- \`.codebuddy/rules/architecture.md\` — Architecture (always applies)
+- \`.codebuddy/rules/plain.md\` — Code Buddy Rule (always applies)
+- \`.codebuddy/rules/backend/database.md\` — DB rules (applies to \`*.sql\`, \`*.prisma\`)
+- \`.codebuddy/rules/conventions.md\` — Conventions (applies to \`*.ts\`)
+- \`.codebuddy/rules/testing.md\` — Testing standards (applies to \`*.test.ts\`, \`*.spec.ts\`)
 
 <!-- create-code-buddy:end -->
 "

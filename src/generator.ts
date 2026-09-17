@@ -4,13 +4,12 @@ import pc from 'picocolors';
 import { PromptAnswers } from './prompts';
 import { BASELINE_RULES } from './defaults';
 import { syncAgents } from './sync';
-import { SSOT_DIR, CONFIG_FILE, POSTINSTALL_SCRIPT } from './core/constants';
+import { SSOT_DIR, CONFIG_FILE, POSTINSTALL_SCRIPT, rulesRoot } from './core/constants';
 
 export async function generateConfig(answers: PromptAnswers, projectRoot: string) {
   const codebuddyDir = path.join(projectRoot, SSOT_DIR);
-  if (!fs.existsSync(codebuddyDir)) {
-    fs.mkdirSync(codebuddyDir, { recursive: true });
-  }
+  const rulesDir = rulesRoot(projectRoot);
+  fs.mkdirSync(rulesDir, { recursive: true });
 
   // 0. Optionally add postinstall script
   if (answers.addPostinstall) {
@@ -40,7 +39,7 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
   // 2. Write the baseline SSOT rules
   let createdCount = 0;
   for (const [filename, template] of Object.entries(BASELINE_RULES)) {
-    const filePath = path.join(codebuddyDir, filename);
+    const filePath = path.join(rulesDir, filename);
     if (!fs.existsSync(filePath)) {
       const fileContent = `---\ndescription: ${template.description}\nglobs: [${template.globs}]\n---\n\n${template.content}`;
       fs.writeFileSync(filePath, fileContent);

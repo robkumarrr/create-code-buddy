@@ -1,11 +1,24 @@
 import fs from 'fs';
 import path from 'path';
 import pc from 'picocolors';
-import { SSOT_DIR, CONFIG_FILE, TOOL_NAME, WATERMARK, GITIGNORE_START, GITIGNORE_END, AGENTS_MD_FILE } from './core/constants';
-import { getRuleFiles, writeFileDeep } from './core/fs';
+import {
+  SSOT_DIR,
+  CONFIG_FILE,
+  TOOL_NAME,
+  WATERMARK,
+  GITIGNORE_START,
+  GITIGNORE_END,
+  AGENTS_MD_FILE,
+  RULES_SUBDIR,
+  SSOT_SUBDIRS,
+  rulesRoot,
+  specsRoot,
+} from './core/constants';
+import { getRuleFiles, writeFileDeep, pruneEmptyDirs } from './core/fs';
 import { parseRule, type Rule } from './core/rule';
 import { fail } from './core/report';
 import { updateAgentsMd } from './core/agents-md';
+import { planMigration } from './migrate';
 import { ADAPTERS } from './adapters';
 
 export interface CodeBuddyConfig {
@@ -66,8 +79,8 @@ export function updateGitignore(projectRoot: string, foldersToIgnore: string[], 
  * touched, no matter what — that guarantee is the reason `clean` and this
  * garbage collector can share a folder with a user's own rules.
  *
- * Does not prune directories left empty by a deletion — that stays `clean`'s
- * job (core/fs.ts's `pruneEmptyDirs`), unchanged from before this refactor.
+ * A deletion that empties a directory prunes it too. Only directories this
+ * tool emptied itself, never ones the user happens to have left bare.
  */
 function cleanStaleRules(targetBase: string, expectedRelativePaths: Set<string>): number {
   if (!fs.existsSync(targetBase)) return 0;
@@ -77,6 +90,9 @@ function cleanStaleRules(targetBase: string, expectedRelativePaths: Set<string>)
     const content = fs.readFileSync(file.abs, 'utf8');
     if (content.includes(WATERMARK) && !expectedRelativePaths.has(file.rel)) {
       fs.unlinkSync(file.abs);
+      // Tidy up the directory too, or de-compiling a nested rule leaves an
+      // empty folder behind in every agent tree for someone to wonder about.
+      pruneEmptyDirs(path.dirname(file.abs), targetBase);
       removed++;
     }
   }
@@ -120,6 +136,40 @@ function cleanStaleExtras(projectRoot: string, dir: string, expectedFromRoot: Se
   }
 }
 
+/** Parses every rule file under one SSOT subdirectory, surfacing warnings. */
+function readSsotDir(dir: string): Rule[] {
+  const rules: Rule[] = [];
+  for (const file of getRuleFiles(dir)) {
+    const { rule, warning } = parseRule(file.rel, fs.readFileSync(file.abs, 'utf8'));
+    if (warning) console.log(pc.yellow(`⚠ ${warning}`));
+    rules.push(rule);
+  }
+  return rules;
+}
+
+/**
+ * Says something when the SSOT holds a directory this tool doesn't recognize.
+ *
+ * A folder name is a promise about where its contents compile to, and only
+ * `rules/` and `specs/` have one. Silently ignoring anything else would leave
+ * someone wondering why their files never appear in any agent folder.
+ */
+function warnAboutUnknownSubdirs(projectRoot: string): void {
+  const ssotDir = path.join(projectRoot, SSOT_DIR);
+  if (!fs.existsSync(ssotDir)) return;
+
+  for (const entry of fs.readdirSync(ssotDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if ((SSOT_SUBDIRS as readonly string[]).includes(entry.name)) continue;
+    console.log(
+      pc.yellow(
+        `⚠ Ignoring ${SSOT_DIR}/${entry.name}/ — not a recognized folder. ` +
+          `Rules belong in ${SSOT_DIR}/${RULES_SUBDIR}/.`,
+      ),
+    );
+  }
+}
+
 export async function syncAgents(projectRoot: string) {
   const config = getConfig(projectRoot);
   if (!config) {
@@ -127,22 +177,25 @@ export async function syncAgents(projectRoot: string) {
     return;
   }
 
-  const ssotDir = path.join(projectRoot, SSOT_DIR);
-  const sourceFiles = getRuleFiles(ssotDir);
-
-  const rules: Rule[] = [];
-  for (const file of sourceFiles) {
-    const { rule, warning } = parseRule(file.rel, fs.readFileSync(file.abs, 'utf8'));
-    if (warning) console.log(pc.yellow(`⚠ ${warning}`));
-    rules.push(rule);
-  }
+  const rules = readSsotDir(rulesRoot(projectRoot));
+  const specs = readSsotDir(specsRoot(projectRoot));
+  warnAboutUnknownSubdirs(projectRoot);
 
   if (rules.length === 0 && hasGeneratedOutput(projectRoot)) {
+    // Distinguish the two ways to land here, because the fix differs: an older
+    // layout needs migrating, an empty rules folder needs the files back.
+    const pendingMoves = planMigration(projectRoot);
+    const remedy =
+      pendingMoves.length > 0
+        ? `  Your rules are still in the older layout. Run \`npx ${TOOL_NAME} migrate\` to move\n` +
+          `  them into ${SSOT_DIR}/${RULES_SUBDIR}/, then sync again.`
+        : `  Restore the rules, or run \`npx ${TOOL_NAME} clean\` if you really do want the\n` +
+          `  generated files gone.`;
+
     fail(
-      `No rules found in ${SSOT_DIR}/, but generated files still exist in your agent folders.\n` +
-        `  Refusing to delete them — this is usually an accidental deletion rather than a\n` +
-        `  request to remove everything. Restore the rules, or run \`npx ${TOOL_NAME} clean\`\n` +
-        `  if you really do want the generated files gone.`,
+      `No rules found in ${SSOT_DIR}/${RULES_SUBDIR}/, but generated files still exist in your\n` +
+        `  agent folders. Refusing to delete them.\n` +
+        remedy,
     );
     return;
   }
@@ -214,7 +267,7 @@ export async function syncAgents(projectRoot: string) {
   // additive and non-destructive, and it is the only thing reaching agents
   // with no adapter of their own.
   const agentsMdEnabled = config.agents_md !== false;
-  updateAgentsMd(projectRoot, rules, agentsMdEnabled);
+  updateAgentsMd(projectRoot, rules, specs, agentsMdEnabled);
   if (agentsMdEnabled) {
     console.log(pc.green(`✔ Indexed rules in ${AGENTS_MD_FILE}`));
   }

@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import YAML from 'yaml';
 import { expect } from 'vitest';
-import { SSOT_DIR, CONFIG_FILE, WATERMARK } from '../core/constants';
+import { SSOT_DIR, CONFIG_FILE, WATERMARK, RULES_SUBDIR, SPECS_SUBDIR } from '../core/constants';
 
 /**
  * Integration-test harness: real directories, real files, real reads.
@@ -55,8 +55,10 @@ export function exists(root: string, relPath: string): boolean {
 export interface SeedOptions {
   agents: string[];
   gitignore?: boolean;
-  /** Map of SSOT-relative path -> file contents, e.g. { 'testing.md': '...' }. */
+  /** Map of path relative to `.codebuddy/rules/`, e.g. { 'testing.md': '...' }. */
   rules?: Record<string, string>;
+  /** Map of path relative to `.codebuddy/specs/`. Indexed, never compiled. */
+  specs?: Record<string, string>;
   /** Extra files anywhere in the workspace, relative to root. */
   files?: Record<string, string>;
 }
@@ -74,7 +76,10 @@ export function seedProject(root: string, opts: SeedOptions): void {
   );
 
   for (const [relPath, contents] of Object.entries(opts.rules ?? {})) {
-    writeFile(root, path.join(SSOT_DIR, relPath), contents);
+    writeFile(root, path.join(SSOT_DIR, RULES_SUBDIR, relPath), contents);
+  }
+  for (const [relPath, contents] of Object.entries(opts.specs ?? {})) {
+    writeFile(root, path.join(SSOT_DIR, SPECS_SUBDIR, relPath), contents);
   }
   for (const [relPath, contents] of Object.entries(opts.files ?? {})) {
     writeFile(root, relPath, contents);

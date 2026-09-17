@@ -1,6 +1,7 @@
 ---
 description: Technical specification for importing and adopting existing agent rules into Hivemind
 globs: ["src/import.ts", "src/init.ts"]
+status: planned
 ---
 
 # Feature: Adopt Existing Rules (The Import Flow)

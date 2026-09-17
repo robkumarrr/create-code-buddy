@@ -199,7 +199,7 @@ describe('hard reset', () => {
     await cleanAgents(root, true);
 
     expect(confirm).toHaveBeenCalledTimes(2);
-    expect(exists(root, '.codebuddy/testing.md')).toBe(true);
+    expect(exists(root, '.codebuddy/rules/testing.md')).toBe(true);
     expect(exists(root, '.cursor/rules/testing.mdc')).toBe(true);
   });
 
@@ -210,7 +210,7 @@ describe('hard reset', () => {
     await cleanAgents(root, true);
 
     expect(confirm).toHaveBeenCalledTimes(1);
-    expect(exists(root, '.codebuddy/testing.md')).toBe(true);
+    expect(exists(root, '.codebuddy/rules/testing.md')).toBe(true);
   });
 
   it('deletes the SSOT and every compiled folder once confirmed', async () => {
@@ -236,7 +236,7 @@ describe('hard reset', () => {
 
     const { execSync } = require('child_process');
     const listing = execSync(`tar -tzf "${path.join(root, backups[0])}"`).toString();
-    expect(listing).toContain('.codebuddy/testing.md');
+    expect(listing).toContain('.codebuddy/rules/testing.md');
   });
 
   it('removes the postinstall script it installed', async () => {
