@@ -3,13 +3,12 @@ import type { Rule } from '../core/rule';
 import { renderPathsRule } from './paths-format';
 
 /**
- * Plan Task 3.12, resolved: Claude Code's `.claude/rules/*.md` format uses a
- * `paths:` YAML block list, not the Cursor-style `description`/`globs` the
- * old block ported verbatim in Phase 2 for lack of a numbered task. Project-
- * level rules (what this tool writes) are confirmed working with this
- * format; a documented gap affects only user-level `~/.claude` rules, which
- * this tool never touches. Shared with Cline via paths-format.ts, whose
- * documented format turns out to be identical.
+ * Claude Code's `.claude/rules/*.md` uses a `paths:` block list — the same
+ * shape as Cline, so both share paths-format.ts.
+ *
+ * Project-level rules, which is all this tool writes, are confirmed working
+ * with this format; a documented gap affects only user-level `~/.claude`
+ * rules.
  */
 const claude: AgentAdapter = {
   id: 'claude',

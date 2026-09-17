@@ -4,16 +4,13 @@ import { WATERMARK } from '../core/constants';
 import { renderFrontmatter, joinGlobs } from '../core/rule';
 
 /**
- * Plan Task 3.1 (highest severity). The old block emitted
- * `applyTo: "*.ts", "*.js"` for more than one glob — not valid YAML, since a
- * frontmatter value can't be two quoted scalars back to back. Two of the four
- * baseline rules this tool ships (conventions, testing) broke on install as
- * a result.
+ * `applyTo` is one comma-joined scalar, written through `renderFrontmatter`
+ * so it is real, parseable YAML.
  *
- * Now goes through `renderFrontmatter`, which writes real, parseable YAML:
- * one single-quoted, comma-joined scalar. Also adds `description`, per the
- * plan's verified format reference (section 1) — the old block never emitted
- * one for Copilot at all.
+ * It used to be built by concatenation, which emitted
+ * `applyTo: "*.ts", "*.js"` for more than one glob — two quoted scalars back
+ * to back, which no YAML parser accepts. Two of the four baseline rules this
+ * tool ships broke on install as a result.
  */
 const copilot: AgentAdapter = {
   id: 'copilot',

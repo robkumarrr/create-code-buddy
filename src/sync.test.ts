@@ -23,18 +23,10 @@ import {
  * (checked 2026-09-15). Where our output differs from this file, our output is
  * what is wrong.
  *
- * Tests marked `it.fails` describe behavior we have specified but not yet
- * implemented. `it.fails` asserts the test currently fails, so the suite stays
- * green — and the moment the underlying bug is fixed, the marker itself starts
- * failing, forcing whoever fixed it to promote the test to a plain `it`.
- * That keeps "green suite" a trustworthy signal all the way through the
- * refactor. Do not delete these to get green; do not leave the branch red.
- *
- * PHASE 2 (adapter registry, complete): flipped two tests, both promoted —
- * block-list globs (adapters now consume Rule.globs from the real parser
- * instead of the old line-splitter), and the deselected-agent GC fix, which
- * Task 2.4's full-registry iteration produced as a direct side effect.
- * PHASE 3 (targeted format fixes): everything else still marked `it.fails`.
+ * If a behavior here is specified but not yet built, mark it `it.fails` rather
+ * than deleting it or leaving the branch red: that asserts the test currently
+ * fails, so the suite stays green, and the marker itself starts failing the
+ * moment the gap is closed — which forces it back to a plain `it`.
  */
 
 const MULTI_GLOB = ruleFile('Testing standards', ['*.test.ts', '*.spec.ts'], '# Testing\n\nUse vitest.');
@@ -279,6 +271,39 @@ describe('format fidelity', () => {
 
     expect(exists(root, '.agents/architecture.md')).toBe(false);
     expect(exists(root, '.agents/mine.md')).toBe(true);
+  });
+
+  it('collects the gemini skill when its source rule is deleted', async () => {
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['gemini'],
+      rules: { 'codebuddy-system.md': ruleFile('System instructions', ['*.*'], '# System') },
+    });
+    await syncAgents(root);
+    expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(true);
+
+    // The skill lives outside the adapter's rulesDir, so the normal
+    // rulesDir-scoped collector never looked there -- deleting the source rule
+    // left it stranded on disk, reachable by neither sync nor clean. That is
+    // the exact failure the skill restoration existed to fix, in miniature.
+    require('fs').unlinkSync(require('path').join(root, '.codebuddy/codebuddy-system.md'));
+    await syncAgents(root);
+
+    expect(exists(root, '.agents/rules/codebuddy-system.md')).toBe(false);
+    expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(false);
+  });
+
+  it('never deletes a hand-written file living beside the gemini skill', async () => {
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['gemini'],
+      rules: { 'codebuddy-system.md': ruleFile('System instructions', ['*.*'], '# System') },
+    });
+    writeFile(root, '.agents/skills/mine/SKILL.md', '# My own skill, not generated');
+
+    await syncAgents(root);
+
+    expect(exists(root, '.agents/skills/mine/SKILL.md')).toBe(true);
   });
 
   it('nested rules keep their directory structure', async () => {

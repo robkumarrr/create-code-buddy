@@ -200,6 +200,55 @@ describe('parseRule', () => {
   });
 });
 
+describe('parseRule: a rule with no globs cannot be glob-targeted', () => {
+  // `alwaysApply: false` with no globs is contradictory input: it asks for a
+  // glob-targeted rule while naming nothing to target. Honouring it literally
+  // produced a rule that matched nothing at all -- an empty `paths:` block for
+  // Cline and Claude Code, an empty `globs:` for Windsurf -- so the rule
+  // silently did nothing in three of the six agents. Most reachable through an
+  // imported Cursor .mdc, where `alwaysApply: false` is a standard shape.
+
+  it('forces alwaysApply when there are no globs to target', () => {
+    const { rule } = parseRule(
+      'edge.md',
+      '---\ndescription: Edge\nalwaysApply: false\n---\n\n# Body',
+    );
+
+    expect(rule.globs).toEqual([]);
+    expect(rule.alwaysApply).toBe(true);
+  });
+
+  it('warns rather than silently overriding what the author wrote', () => {
+    const { warning } = parseRule(
+      'edge.md',
+      '---\ndescription: Edge\nalwaysApply: false\n---\n\n# Body',
+    );
+
+    expect(warning).toBeDefined();
+    expect(warning).toContain('edge.md');
+  });
+
+  it('still honours an explicit false when there are real globs', () => {
+    const { rule, warning } = parseRule(
+      'ok.md',
+      '---\ndescription: Fine\nglobs: ["*.ts"]\nalwaysApply: false\n---\n\n# Body',
+    );
+
+    expect(rule.alwaysApply).toBe(false);
+    expect(warning).toBeUndefined();
+  });
+
+  it('keeps the YAML warning too when both problems occur in one file', () => {
+    const { warning } = parseRule(
+      'both.md',
+      '---\napplyTo: "*.ts", "*.js"\nalwaysApply: false\n---\n\n# Body',
+    );
+
+    expect(warning).toContain('not valid YAML');
+    expect(warning).toContain('no globs');
+  });
+});
+
 describe('parseRule: hasFrontmatter', () => {
   it('is false for a file with no frontmatter block at all', () => {
     expect(parseRule('plain.md', '# Just a heading').rule.hasFrontmatter).toBe(false);

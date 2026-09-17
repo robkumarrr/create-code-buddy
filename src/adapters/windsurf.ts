@@ -4,34 +4,25 @@ import { WATERMARK } from '../core/constants';
 import { joinGlobs } from '../core/rule';
 
 /**
- * Plan Task 3.10, resolved. The comparable-tooling signal that prompted this
- * task ("dropped Windsurf support entirely") turned out to be a rebrand, not
- * an abandonment: Windsurf is now Devin Desktop (docs.windsurf.com 307s to
- * docs.devin.ai as of 2026-09-17). `.windsurf/rules/` still works — it's the
- * documented backward-compatible fallback, with `.devin/rules/` as the new
- * preferred location. This adapter keeps writing the legacy-but-supported
- * path; whether to also target `.devin/rules/`, or rename the adapter
- * outright, is a further, separate decision — this fix is scoped to making
- * the id and directory we already ship actually work.
+ * Windsurf is now Devin Desktop (docs.windsurf.com redirects to
+ * docs.devin.ai, verified 2026-09-17). `.windsurf/rules/` remains the
+ * documented backward-compatible location; `.devin/rules/` is preferred and
+ * takes precedence where both exist — worth revisiting if that fallback is
+ * ever dropped.
  *
- * The old passthrough format (bare description/globs, no activation key at
- * all) is not what the tool reads. The real schema is a `trigger` field:
- *   - always_on  -- full content on every message
- *   - glob       -- applied when a matching file is read or edited, paired
- *                   with a `globs` field
- *   - model_decision / manual exist too, but nothing in the Rule model maps
- *     to either, so this adapter never emits them
+ * Activation is set by a `trigger` field: `always_on` or `glob` (paired with
+ * `globs`). `model_decision` and `manual` also exist, but nothing in the Rule
+ * model maps to either, so they're never emitted.
  *
- * `globs` uses the same bare, comma-joined, non-YAML form as Cursor's own
- * globs line (confirmed by example: a bare, unquoted, comma-joined list of
- * recursive-wildcard patterns) -- a pattern starting with two asterisks is
- * YAML alias syntax, so this is hand-built rather than run through
- * `renderFrontmatter`, exactly like Cursor. `trigger: always_on` on its own,
- * with no globs key, is real YAML and needs no such care.
+ * `globs` is hand-built rather than run through `renderFrontmatter`: it uses
+ * the same bare, unquoted, comma-joined form as Cursor's, and a pattern
+ * starting with two asterisks is YAML alias syntax — quoting it to satisfy a
+ * YAML parser would put the quotes inside the pattern. `trigger: always_on`
+ * alone carries no globs key and is ordinary YAML.
  */
 const windsurf: AgentAdapter = {
   id: 'windsurf',
-  label: 'Windsurf',
+  label: 'Windsurf / Devin',
   rulesDir: '.windsurf/rules',
   ignorePaths: ['.windsurf/rules/'],
 

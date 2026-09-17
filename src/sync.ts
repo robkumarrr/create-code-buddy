@@ -77,6 +77,23 @@ function cleanStaleRules(targetBase: string, expectedRelativePaths: Set<string>)
   }
 }
 
+/**
+ * The same collection pass for directories an adapter writes into outside its
+ * `rulesDir` (see `AgentAdapter.extraDirs`). Expected paths are project-
+ * relative here, because that is how `extraFiles` names what it produces.
+ */
+function cleanStaleExtras(projectRoot: string, dir: string, expectedFromRoot: Set<string>) {
+  const base = path.join(projectRoot, dir);
+  if (!fs.existsSync(base)) return;
+
+  for (const file of getRuleFiles(base)) {
+    const content = fs.readFileSync(file.abs, 'utf8');
+    if (!content.includes(WATERMARK)) continue;
+    if (expectedFromRoot.has(path.relative(projectRoot, file.abs))) continue;
+    fs.unlinkSync(file.abs);
+  }
+}
+
 export async function syncAgents(projectRoot: string) {
   const config = getConfig(projectRoot);
   if (!config) {
@@ -108,7 +125,15 @@ export async function syncAgents(projectRoot: string) {
     const expectedPaths = active ? new Set(rules.map((rule) => adapter.outputPath(rule))) : new Set<string>();
     cleanStaleRules(targetBase, expectedPaths);
 
-    // Runs regardless of active/inactive, like cleanStaleRules above -- an
+    // Same treatment for anything the adapter writes outside its rulesDir:
+    // when inactive the expected set is empty, so all of it collects.
+    const extraFiles = active ? (adapter.extraFiles?.(rules) ?? []) : [];
+    const expectedExtras = new Set(extraFiles.map((extra) => path.normalize(extra.path)));
+    for (const dir of adapter.extraDirs ?? []) {
+      cleanStaleExtras(projectRoot, dir, expectedExtras);
+    }
+
+    // Runs regardless of active/inactive, like the collectors above -- an
     // orphan left in a now-abandoned output location is still an orphan
     // whether or not the agent that made it is currently selected.
     adapter.collectLegacyOrphans?.(projectRoot);
@@ -120,10 +145,8 @@ export async function syncAgents(projectRoot: string) {
       writeFileDeep(targetAbs, adapter.render(rule));
     }
 
-    if (adapter.extraFiles) {
-      for (const extra of adapter.extraFiles(rules)) {
-        writeFileDeep(path.join(projectRoot, extra.path), extra.content);
-      }
+    for (const extra of extraFiles) {
+      writeFileDeep(path.join(projectRoot, extra.path), extra.content);
     }
 
     ignorePathsByAgent.set(adapter.id, adapter.ignorePaths);

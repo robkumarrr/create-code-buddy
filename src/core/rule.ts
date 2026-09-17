@@ -183,7 +183,7 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
   const [, frontmatterBlock, body] = match;
 
   let attributes: Record<string, unknown>;
-  let warning: string | undefined;
+  const warnings: string[] = [];
 
   try {
     const parsed = YAML.parse(frontmatterBlock);
@@ -194,7 +194,9 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
   } catch (err) {
     attributes = parseFrontmatterLenient(frontmatterBlock);
     const reason = err instanceof Error ? err.message.split('\n')[0] : String(err);
-    warning = `${relPath}: frontmatter is not valid YAML (${reason}). Read it leniently — re-run sync after fixing it.`;
+    warnings.push(
+      `${relPath}: frontmatter is not valid YAML (${reason}). Read it leniently — re-run sync after fixing it.`,
+    );
   }
 
   const { description, globs, alwaysApply, ...extra } = attributes;
@@ -206,6 +208,20 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
     normalizedGlobs.length === 0 ||
     normalizedGlobs.every((glob) => UNIVERSAL_GLOBS.has(glob));
 
+  // A rule with no globs cannot be glob-targeted — there is nothing to match
+  // against. `alwaysApply: false` with no globs is contradictory, and taking
+  // it literally compiles a rule that activates for nothing: an empty
+  // `paths:` block, an empty `globs:`. Resolve it here rather than in each
+  // adapter, and say so, because silently picking either reading for the
+  // author is worse than telling them what they wrote.
+  const contradictsEmptyGlobs = explicitAlwaysApply === false && normalizedGlobs.length === 0;
+  if (contradictsEmptyGlobs) {
+    warnings.push(
+      `${relPath}: alwaysApply is false but the rule has no globs, so there is nothing to scope it to. ` +
+        `Treating it as always-apply — add globs, or remove alwaysApply, to silence this.`,
+    );
+  }
+
   const rule: Rule = {
     relPath,
     description:
@@ -213,13 +229,16 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
         ? description.trim()
         : DEFAULT_DESCRIPTION,
     globs: normalizedGlobs,
-    alwaysApply: explicitAlwaysApply ?? impliedAlwaysApply,
+    alwaysApply: contradictsEmptyGlobs ? true : (explicitAlwaysApply ?? impliedAlwaysApply),
     hasFrontmatter: Object.keys(attributes).length > 0,
     extra,
     body,
   };
 
-  return warning ? { rule, warning } : { rule };
+  // Joined rather than returned as a list so the public shape stays one
+  // optional string, while a file with more than one problem still reports
+  // all of them instead of only the first.
+  return warnings.length > 0 ? { rule, warning: warnings.join(' ') } : { rule };
 }
 
 /**

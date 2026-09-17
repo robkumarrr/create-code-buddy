@@ -9,15 +9,13 @@ import { legacyAttributeLines } from './legacy-format';
 /** The one SSOT file this adapter treats specially — see extraFiles below. */
 const SYSTEM_RULE_PATH = 'codebuddy-system.md';
 
-/**
- * Ported verbatim from the old `if (agent === 'gemini')` block in sync.ts,
- * plus the restoration in Task 3.11.
- */
+/** Compiles rules to `.agents/rules/`, plus one native skill — see below. */
 const gemini: AgentAdapter = {
   id: 'gemini',
   label: 'Gemini',
   rulesDir: '.agents/rules',
   ignorePaths: ['.agents/rules/'],
+  extraDirs: ['.agents/skills'],
 
   outputPath(rule: Rule): string {
     return rule.relPath;
@@ -31,23 +29,13 @@ const gemini: AgentAdapter = {
   },
 
   /**
-   * Restores what commit 515aaa3 shipped once: the SSOT's own system rule
-   * compiled as a native Gemini Skill, not just a passive always-on rule.
-   * Silently dropped when Gemini's output moved to .agents/rules/ in
-   * 1fcc7cb — nothing guarded it, so the regression was invisible until this
-   * repo's own orphaned .agents/skills/codebuddy-system/SKILL.md turned up
-   * in the audit that produced this hardening plan.
+   * The SSOT's own system rule also compiles to a native Gemini Skill, which
+   * Gemini treats as an invokable capability rather than passive context.
    *
-   * Written in ADDITION to the normal .agents/rules/codebuddy-system.md
-   * output above, not as a replacement for it — the original redirected the
-   * output path instead of duplicating it, but doing that today would mean
-   * outputPath() reaching outside its own rulesDir (.agents/rules -> a
-   * sibling .agents/skills/ directory) via a `../` return value, which the
-   * normal rulesDir-scoped garbage collector can never discover to clean up
-   * again if the source rule is later deleted or renamed — trading one
-   * orphan bug for a mechanism that can quietly produce another. Nothing
-   * pins the exact-replacement behavior; this is the deliberately safer
-   * shape given what's actually specified.
+   * Written in ADDITION to the normal `.agents/rules/` output rather than
+   * replacing it. Redirecting instead would mean `outputPath()` returning a
+   * `../` path to escape its own `rulesDir`, which the rulesDir-scoped
+   * collector could never find again. `extraDirs` covers the collection side.
    */
   extraFiles(rules: Rule[]): { path: string; content: string }[] {
     const systemRule = rules.find((rule) => rule.relPath === SYSTEM_RULE_PATH);

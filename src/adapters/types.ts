@@ -21,9 +21,9 @@ export interface AgentAdapter {
 
   /**
    * Exact paths to write into .gitignore. Scoped to generated output —
-   * '.claude/rules/', never '.claude/' (plan Task 3.4). Ignoring a whole
-   * agent folder would silently stop tracking the user's own settings,
-   * commands and skills that live alongside the generated rules.
+   * '.claude/rules/', never '.claude/'. Ignoring a whole agent folder would
+   * silently stop tracking the user's own settings, commands and skills that
+   * live alongside the generated rules.
    */
   ignorePaths: string[];
 
@@ -40,13 +40,24 @@ export interface AgentAdapter {
    * generated output.
    *
    * Written additively alongside the normal per-rule output, not as a
-   * replacement for it — see gemini.ts's implementation (Task 3.11) for the
-   * one adapter that uses this today, and why. Garbage collection for a
-   * source rule that disappears is not wired up generically; an adapter
-   * using this for something longer-lived than one restored feature should
-   * revisit that.
+   * replacement for it — see gemini.ts for the one adapter using this today,
+   * and why. Declare `extraDirs` alongside it so the output can be collected
+   * when its source rule goes away.
    */
   extraFiles?(rules: Rule[]): { path: string; content: string }[];
+
+  /**
+   * Directories outside `rulesDir` that this adapter also writes into,
+   * relative to project root. Anything watermarked in here that `extraFiles`
+   * no longer produces is an orphan and gets collected, and `clean` offers
+   * these alongside the rule directories.
+   *
+   * Without this, a file written by `extraFiles` outlives the rule it came
+   * from: the garbage collector only ever scans `rulesDir`, so deleting the
+   * source rule stranded the output permanently, reachable by neither `sync`
+   * nor `clean`.
+   */
+  extraDirs?: string[];
 
   /**
    * Optional cleanup for files this adapter wrote to a now-abandoned
@@ -55,10 +66,10 @@ export interface AgentAdapter {
    * whether or not the agent that made it is still selected — separately
    * from the normal `rulesDir`-scoped garbage collection.
    *
-   * Exists for Gemini alone today (Task 3.11): rules used to compile
-   * straight into `.agents/` before moving to `.agents/rules/`, and existing
-   * users still have those orphans on disk where the normal scan can no
-   * longer see them.
+   * Exists for Gemini alone today: rules used to compile straight into
+   * `.agents/` before moving to `.agents/rules/`, and existing users still
+   * have those orphans on disk where the normal scan can no longer see
+   * them.
    */
   collectLegacyOrphans?(projectRoot: string): void;
 }

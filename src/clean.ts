@@ -28,10 +28,18 @@ const AGENT_COLORS: Record<string, (s: string) => string> = {
  * from sync.ts's own per-agent list — the two had already drifted from each
  * other once (Gemini's folder moved without this list following).
  */
-const AGENT_FOLDERS = ADAPTERS.map((adapter) => ({
-  value: adapter.rulesDir,
-  label: `${adapter.label.padEnd(15)} ${pc.dim((AGENT_COLORS[adapter.id] ?? pc.dim)(`(${adapter.rulesDir})`))}`,
-}));
+const AGENT_FOLDERS = ADAPTERS.flatMap((adapter) => {
+  const color = AGENT_COLORS[adapter.id] ?? pc.dim;
+  const row = (dir: string) => ({
+    value: dir,
+    label: `${adapter.label.padEnd(15)} ${pc.dim(color(`(${dir})`))}`,
+  });
+
+  // extraDirs are part of the adapter's footprint too — a factory reset that
+  // skipped them would leave generated files behind and still call itself a
+  // reset.
+  return [row(adapter.rulesDir), ...(adapter.extraDirs ?? []).map(row)];
+});
 
 export async function cleanAgents(projectRoot: string, isHard: boolean = false, force: boolean = false) {
   if (isHard) {
