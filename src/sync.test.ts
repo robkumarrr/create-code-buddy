@@ -277,7 +277,13 @@ describe('format fidelity', () => {
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['gemini'],
-      rules: { 'codebuddy-system.md': ruleFile('System instructions', ['*.*'], '# System') },
+      // A second rule so removing the system one doesn't empty the rule set --
+      // that would trip the "refuse to wipe everything" guard, which is a
+      // different behavior than the one under test here.
+      rules: {
+        'codebuddy-system.md': ruleFile('System instructions', ['*.*'], '# System'),
+        'testing.md': MULTI_GLOB,
+      },
     });
     await syncAgents(root);
     expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(true);
@@ -473,6 +479,49 @@ describe('gitignore', () => {
     await syncAgents(root);
 
     expect(readFile(root, '.gitignore')).not.toContain('Create Code Buddy');
+  });
+});
+
+describe('refuses to wipe everything (safety guard)', () => {
+  it('stops instead of deleting all output when every source rule is gone', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor', 'claude', 'cline'], rules: { 'testing.md': MULTI_GLOB } });
+    await syncAgents(root);
+    expect(exists(root, '.cursor/rules/testing.mdc')).toBe(true);
+
+    // Simulates the two ways this happens in practice: an accidental delete,
+    // or an upgrade where the tool starts looking somewhere the rules aren't.
+    require('fs').rmSync(require('path').join(root, '.codebuddy/testing.md'));
+
+    await syncAgents(root);
+
+    // Every compiled file must survive. Silently removing all of them while
+    // printing success is how 12 files vanished across six folders.
+    expect(exists(root, '.cursor/rules/testing.mdc')).toBe(true);
+    expect(exists(root, '.claude/rules/testing.md')).toBe(true);
+    expect(exists(root, '.clinerules/testing.md')).toBe(true);
+    expect(process.exitCode).toBe(1);
+  });
+
+  it('leaves the AGENTS.md index alone when it refuses', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
+    await syncAgents(root);
+
+    require('fs').rmSync(require('path').join(root, '.codebuddy/testing.md'));
+    await syncAgents(root);
+
+    expect(readFile(root, 'AGENTS.md')).toContain('.codebuddy/testing.md');
+  });
+
+  it('still syncs normally when there are no rules AND no previous output', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'] });
+
+    await syncAgents(root);
+
+    // A genuinely empty project is not an error -- there is nothing to lose.
+    expect(process.exitCode).not.toBe(1);
   });
 });
 

@@ -69,15 +69,38 @@ export function updateGitignore(projectRoot: string, foldersToIgnore: string[], 
  * Does not prune directories left empty by a deletion — that stays `clean`'s
  * job (core/fs.ts's `pruneEmptyDirs`), unchanged from before this refactor.
  */
-function cleanStaleRules(targetBase: string, expectedRelativePaths: Set<string>) {
-  if (!fs.existsSync(targetBase)) return;
-  const existingFiles = getRuleFiles(targetBase);
-  for (const file of existingFiles) {
+function cleanStaleRules(targetBase: string, expectedRelativePaths: Set<string>): number {
+  if (!fs.existsSync(targetBase)) return 0;
+
+  let removed = 0;
+  for (const file of getRuleFiles(targetBase)) {
     const content = fs.readFileSync(file.abs, 'utf8');
     if (content.includes(WATERMARK) && !expectedRelativePaths.has(file.rel)) {
       fs.unlinkSync(file.abs);
+      removed++;
     }
   }
+  return removed;
+}
+
+/**
+ * True when any adapter folder still holds a file this tool generated.
+ *
+ * Used as a tripwire: zero source rules plus existing generated output is far
+ * more likely to be a mistake — an accidental delete, or an upgrade looking in
+ * a directory the rules haven't moved to yet — than a deliberate request to
+ * remove everything. Without this, that combination silently deletes every
+ * compiled file across all six folders while reporting success.
+ */
+function hasGeneratedOutput(projectRoot: string): boolean {
+  for (const adapter of ADAPTERS) {
+    const base = path.join(projectRoot, adapter.rulesDir);
+    if (!fs.existsSync(base)) continue;
+    for (const file of getRuleFiles(base)) {
+      if (fs.readFileSync(file.abs, 'utf8').includes(WATERMARK)) return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -114,6 +137,16 @@ export async function syncAgents(projectRoot: string) {
     rules.push(rule);
   }
 
+  if (rules.length === 0 && hasGeneratedOutput(projectRoot)) {
+    fail(
+      `No rules found in ${SSOT_DIR}/, but generated files still exist in your agent folders.\n` +
+        `  Refusing to delete them — this is usually an accidental deletion rather than a\n` +
+        `  request to remove everything. Restore the rules, or run \`npx ${TOOL_NAME} clean\`\n` +
+        `  if you really do want the generated files gone.`,
+    );
+    return;
+  }
+
   const ignorePathsByAgent = new Map<string, string[]>();
 
   for (const adapter of ADAPTERS) {
@@ -126,7 +159,7 @@ export async function syncAgents(projectRoot: string) {
     // deselecting an agent in `init` actually remove its folder, and it is
     // self-healing even if config.json is hand-edited — no extra state needed.
     const expectedPaths = active ? new Set(rules.map((rule) => adapter.outputPath(rule))) : new Set<string>();
-    cleanStaleRules(targetBase, expectedPaths);
+    const removed = cleanStaleRules(targetBase, expectedPaths);
 
     // Same treatment for anything the adapter writes outside its rulesDir:
     // when inactive the expected set is empty, so all of it collects.
@@ -153,7 +186,16 @@ export async function syncAgents(projectRoot: string) {
     }
 
     ignorePathsByAgent.set(adapter.id, adapter.ignorePaths);
-    console.log(pc.green(`✔ Compiled to ${adapter.label} (${adapter.rulesDir})`));
+
+    // Say what actually happened, including deletions. A bare tick used to
+    // print even when the run had removed every file it found.
+    const wrote = `${rules.length} rule${rules.length === 1 ? '' : 's'}`;
+    const alsoRemoved = removed > 0 ? pc.dim(` (removed ${removed} stale)`) : '';
+    console.log(
+      pc.green(`✔ Compiled ${wrote} → ${adapter.label}`) +
+        pc.dim(` (${adapter.rulesDir})`) +
+        alsoRemoved,
+    );
   }
 
   // Reassemble the ignore list in config.agents's own order rather than the
