@@ -1,15 +1,18 @@
 import fs from 'fs';
 import path from 'path';
 import pc from 'picocolors';
-import { SSOT_DIR, CONFIG_FILE, TOOL_NAME, WATERMARK, GITIGNORE_START, GITIGNORE_END } from './core/constants';
+import { SSOT_DIR, CONFIG_FILE, TOOL_NAME, WATERMARK, GITIGNORE_START, GITIGNORE_END, AGENTS_MD_FILE } from './core/constants';
 import { getRuleFiles, writeFileDeep } from './core/fs';
 import { parseRule, type Rule } from './core/rule';
 import { fail } from './core/report';
+import { updateAgentsMd } from './core/agents-md';
 import { ADAPTERS } from './adapters';
 
 export interface CodeBuddyConfig {
   agents: string[];
   gitignore_compiled_agents: boolean;
+  /** Absent in configs written before AGENTS.md support; treated as true. */
+  agents_md?: boolean;
 }
 
 export function getConfig(projectRoot: string): CodeBuddyConfig | null {
@@ -164,4 +167,13 @@ export async function syncAgents(projectRoot: string) {
   const foldersToIgnore = config.agents.flatMap((id) => ignorePathsByAgent.get(id) ?? []);
 
   updateGitignore(projectRoot, foldersToIgnore, !config.gitignore_compiled_agents);
+
+  // Defaults on for configs written before this existed: the pointer is
+  // additive and non-destructive, and it is the only thing reaching agents
+  // with no adapter of their own.
+  const agentsMdEnabled = config.agents_md !== false;
+  updateAgentsMd(projectRoot, rules, agentsMdEnabled);
+  if (agentsMdEnabled) {
+    console.log(pc.green(`✔ Indexed rules in ${AGENTS_MD_FILE}`));
+  }
 }

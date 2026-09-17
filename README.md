@@ -34,6 +34,25 @@ We natively compile your markdown rules into the exact format required by:
 - **Gemini** (`.agents/rules/*.md`) — also restores this tool's own system rule as a native Gemini Skill
 - **Windsurf** (`.windsurf/rules/*.md`) — see note below; Windsurf rebranded to Devin Desktop
 
+### `AGENTS.md` — everything else
+
+Beyond the adapters above, we write a short **rule index** into your repo's `AGENTS.md`
+— the cross-agent convention read natively by **Codex**, Cursor, Copilot, Gemini CLI,
+Aider, Devin Desktop, Zed and 20+ others.
+
+It's a pointer, not a copy: each rule's path, description and scope, one line each. The
+rule text stays in `.codebuddy/` and the agent opens only what's relevant, instead of
+every rule riding along in context on every turn. Only the block between the
+`create-code-buddy` markers is ever rewritten — anything you wrote around it is left
+alone. Opt out with `--no-agents-md`.
+
+> **Using Claude Code?** It reads `CLAUDE.md`, not `AGENTS.md`. Either select the
+> `claude` agent above (better — you get real path-scoped rules), or add a one-line
+> import at the top of your `CLAUDE.md`:
+> ```markdown
+> @AGENTS.md
+> ```
+
 > **Windsurf → Devin Desktop:** Windsurf's docs now redirect to Devin Desktop's. We
 > target `.windsurf/rules/`, which is documented as a supported backward-compatible
 > location — not the newer `.devin/rules/` path. If Devin Desktop drops that fallback in
@@ -72,8 +91,8 @@ npx create-code-buddy clean
 Being upfront about the edges, since a bug report from someone who believed the docs
 costs more than a shorter feature list:
 
-- **No `AGENTS.md` or `CLAUDE.md` generation.** These are increasingly the convention
-  many tools (Codex among them) read directly — not yet a compile target here.
+- **No `CLAUDE.md` generation.** Claude Code reads `CLAUDE.md` rather than `AGENTS.md`;
+  we document the one-line `@AGENTS.md` import instead of writing the file for you.
 - **No import from existing agent-specific rules.** If you already have `.cursor/rules/`
   or similar, there's no command yet to pull them into `.codebuddy/` for you.
 - **No drift detection.** If you commit compiled folders for your team and someone hand-edits

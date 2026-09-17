@@ -33,6 +33,7 @@ export interface PromptAnswers {
   agents: string[];
   addToGitignore: boolean;
   addPostinstall: boolean;
+  addAgentsMd: boolean;
 }
 
 export interface RunPromptsArgs {
@@ -40,6 +41,7 @@ export interface RunPromptsArgs {
   agents?: string[];
   addToGitignore?: boolean;
   addPostinstall?: boolean;
+  addAgentsMd?: boolean;
 }
 
 export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<PromptAnswers | null> {
@@ -53,7 +55,8 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
       // package.json existed, with no flag to decline, so an agent following
       // our own non-interactive instructions could edit a user's
       // package.json without asking. --postinstall opts in explicitly.
-      addPostinstall: initialArgs.addPostinstall === true
+      addPostinstall: initialArgs.addPostinstall === true,
+      addAgentsMd: initialArgs.addAgentsMd !== false
     };
   }
 
@@ -129,6 +132,7 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
   return {
     agents,
     addToGitignore,
-    addPostinstall
+    addPostinstall,
+    addAgentsMd: initialArgs.addAgentsMd !== false
   };
 }

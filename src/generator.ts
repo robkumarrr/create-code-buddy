@@ -32,7 +32,8 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
   const configPath = path.join(codebuddyDir, CONFIG_FILE);
   const config = {
     agents: answers.agents,
-    gitignore_compiled_agents: answers.addToGitignore
+    gitignore_compiled_agents: answers.addToGitignore,
+    agents_md: answers.addAgentsMd
   };
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 

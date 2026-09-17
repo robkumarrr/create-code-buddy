@@ -60,6 +60,25 @@ export const GITIGNORE_START = '# --- Create Code Buddy (Start) ---';
 export const GITIGNORE_END = '# --- Create Code Buddy (End) ---';
 
 /**
+ * The cross-agent convention file, read natively by Codex, Cursor, Copilot,
+ * Gemini CLI, Aider, Devin Desktop, Zed and others. Notably NOT read by
+ * Claude Code, which reads CLAUDE.md — bridged with a one-line `@AGENTS.md`
+ * import, documented in the README rather than written for the user, since
+ * anyone selecting the `claude` agent already gets properly path-scoped
+ * rules in `.claude/rules/` and doesn't need the pointer.
+ */
+export const AGENTS_MD_FILE = 'AGENTS.md';
+
+/**
+ * Delimiters for the managed block inside AGENTS.md. Same approach as
+ * .gitignore: this file is frequently hand-written, so only the block
+ * between these markers is ever rewritten, and everything around it is left
+ * exactly as the author left it.
+ */
+export const AGENTS_MD_START = '<!-- create-code-buddy:start -->';
+export const AGENTS_MD_END = '<!-- create-code-buddy:end -->';
+
+/**
  * The postinstall script `generator.ts` writes and `clean.ts` looks for
  * before removing. Shared so the two can never drift from each other —
  * `clean --hard` deletes a postinstall entry only on an exact string match.

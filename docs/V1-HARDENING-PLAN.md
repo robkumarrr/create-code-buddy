@@ -601,7 +601,38 @@ the 54 hardcoded sites there are today. **Do not rename anything now.**
 
 ---
 
-## PHASE 5 — `AGENTS.md` pointer ⚙️ REDESIGNED 2026-09-17, not yet implemented
+## PHASE 5 — `AGENTS.md` pointer ✅ COMPLETE
+
+Shipped as `core/agents-md.ts`, a managed block in the repo's `AGENTS.md` listing each
+rule's path, description and scope — a pointer, not a copy. Handled like `.gitignore`
+rather than as a seventh adapter: one file derived from all rules, not one file per
+rule, so it never bent the `AgentAdapter` interface. On by default, `--no-agents-md` to
+opt out, and disabling it removes the block (deleting the file only if nothing of the
+user's was in it). 129 tests.
+
+**The open research question is answered, and it changed the design:**
+
+- **Devin Desktop reads `AGENTS.md` natively** — dedicated docs page. Root-level is an
+  always-on rule; subdirectory files become glob rules scoped to `<directory>/**`.
+- **Claude Code does NOT.** Its memory docs state verbatim: "Claude Code reads
+  `CLAUDE.md`, not `AGENTS.md`." The documented bridge is a one-line `@AGENTS.md` import
+  at the top of `CLAUDE.md`.
+
+So the `CLAUDE.md` adapter the original plan called for was **not built**, deliberately:
+anyone selecting the `claude` agent already gets properly path-scoped rules in
+`.claude/rules/`, which is strictly better than an index. Writing them a second, weaker
+pointer would be redundant. The one-line import is documented in the README for anyone
+who wants it.
+
+Two incidental confirmations from the same docs, both validating earlier work:
+`.claude/rules/` with `paths:` frontmatter is officially documented and "rules without a
+`paths` field are loaded unconditionally" (exactly Task 3.12), and block-level HTML
+comments are stripped from Claude's context — so the watermark costs no tokens while
+staying on disk for garbage collection.
+
+---
+
+### Original design notes (superseded by the above)
 
 **Handoff: Opus.** Sonnet did Phases 3–4 and the research below; this phase's actual
 implementation is intentionally left for a fresh pass rather than rushed in alongside

@@ -28,7 +28,8 @@ describe('prompts', () => {
     expect(result).toEqual({
       agents: ['cursor', 'gemini'],
       addToGitignore: true,
-      addPostinstall: false
+      addPostinstall: false,
+      addAgentsMd: true
     });
   });
 
@@ -45,7 +46,8 @@ describe('prompts', () => {
     expect(result).toEqual({
       agents: ['copilot'],
       addToGitignore: true,
-      addPostinstall: expect.any(Boolean)
+      addPostinstall: expect.any(Boolean),
+      addAgentsMd: true
     });
   });
 });
