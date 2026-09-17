@@ -26,6 +26,11 @@ export interface CodeBuddyConfig {
   gitignore_compiled_agents: boolean;
   /** Absent in configs written before AGENTS.md support; treated as true. */
   agents_md?: boolean;
+  /**
+   * What `agents_md` was called in the earlier pointer-block release. Read so
+   * an existing config keeps the setting its owner chose; never written.
+   */
+  update_agents_md?: boolean;
 }
 
 export function getConfig(projectRoot: string): CodeBuddyConfig | null {
@@ -266,7 +271,7 @@ export async function syncAgents(projectRoot: string) {
   // Defaults on for configs written before this existed: the pointer is
   // additive and non-destructive, and it is the only thing reaching agents
   // with no adapter of their own.
-  const agentsMdEnabled = config.agents_md !== false;
+  const agentsMdEnabled = (config.agents_md ?? config.update_agents_md) !== false;
   updateAgentsMd(projectRoot, rules, specs, agentsMdEnabled);
   if (agentsMdEnabled) {
     console.log(pc.green(`✔ Indexed rules in ${AGENTS_MD_FILE}`));

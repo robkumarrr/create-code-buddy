@@ -21,8 +21,12 @@ describe('prompts', () => {
     vi.mocked(clackPrompts.multiselect)
       .mockResolvedValueOnce(['cursor', 'gemini']);
       
+    // One per step. The postinstall step only appears when a package.json is
+    // present, which it is — this runs in the repo root.
     vi.mocked(clackPrompts.select)
-      .mockResolvedValueOnce('yes'); // gitignore
+      .mockResolvedValueOnce('yes')  // gitignore
+      .mockResolvedValueOnce('no')   // postinstall
+      .mockResolvedValueOnce('yes'); // AGENTS.md index
 
     const result = await runPrompts();
     expect(result).toEqual({

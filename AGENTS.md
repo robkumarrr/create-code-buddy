@@ -118,6 +118,7 @@ Feature specs live in `.codebuddy/specs/`. They are not loaded automatically —
 open the one covering what you're working on.
 
 - `.codebuddy/specs/adopt-existing-rules.md` — Technical specification for importing and adopting existing agent rules into Hivemind — planned
+- `.codebuddy/specs/mcp-integration.md` — Expose Code Buddy operations as an MCP server — to-do
 - `.codebuddy/specs/v1-migration.md` — Technical specification for the Official V1 Hivemind Rebrand and Migration system — parked
 
 <!-- create-code-buddy:end -->

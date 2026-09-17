@@ -5,6 +5,8 @@ import {
   AGENTS_MD_FILE,
   AGENTS_MD_START,
   AGENTS_MD_END,
+  AGENTS_MD_LEGACY_START,
+  AGENTS_MD_LEGACY_END,
   SSOT_DIR,
   RULES_SUBDIR,
   SPECS_SUBDIR,
@@ -89,6 +91,27 @@ function toPosix(relPath: string): string {
 }
 
 /**
+ * Finds the managed block, accepting the legacy markers as well as the
+ * current ones so an upgrade replaces an older block instead of stranding it.
+ * Returns the span to cut, or null when there's no block to replace.
+ */
+function locateBlock(existing: string): { start: number; end: number } | null {
+  const pairs: [string, string][] = [
+    [AGENTS_MD_START, AGENTS_MD_END],
+    [AGENTS_MD_LEGACY_START, AGENTS_MD_LEGACY_END],
+  ];
+
+  for (const [startMarker, endMarker] of pairs) {
+    const start = existing.indexOf(startMarker);
+    const end = existing.indexOf(endMarker);
+    if (start !== -1 && end !== -1 && end > start) {
+      return { start, end: end + endMarker.length };
+    }
+  }
+  return null;
+}
+
+/**
  * Adds, updates, or (when `enabled` is false) removes the managed block.
  *
  * Removing never deletes the file itself — an AGENTS.md the user wrote is
@@ -104,12 +127,11 @@ export function updateAgentsMd(
   const exists = fs.existsSync(target);
   const existing = exists ? fs.readFileSync(target, 'utf8') : '';
 
-  const startIndex = existing.indexOf(AGENTS_MD_START);
-  const endIndex = existing.indexOf(AGENTS_MD_END);
-  const hasBlock = startIndex !== -1 && endIndex !== -1 && endIndex > startIndex;
+  const found = locateBlock(existing);
+  const hasBlock = found !== null;
 
-  const before = hasBlock ? existing.slice(0, startIndex).trimEnd() : existing.trimEnd();
-  const after = hasBlock ? existing.slice(endIndex + AGENTS_MD_END.length).trimStart() : '';
+  const before = found ? existing.slice(0, found.start).trimEnd() : existing.trimEnd();
+  const after = found ? existing.slice(found.end).trimStart() : '';
 
   if (!enabled) {
     if (!hasBlock) return;
