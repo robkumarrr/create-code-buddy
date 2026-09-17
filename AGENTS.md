@@ -1,81 +1,91 @@
 # Agentic Guidelines for `create-code-buddy`
 
-Welcome, AI Agent! If you are reading this file, you are currently assisting a contributor with the `create-code-buddy` repository.
+Welcome, AI Agent! If you are reading this file, you are currently assisting a
+contributor with the `create-code-buddy` repository — the CLI itself, not a project
+that uses it.
 
 ## Project Context
-- **Name**: `create-code-buddy`
-- **Purpose**: A CLI tool that automatically scaffolds perfect, token-minimized context rules for AI agents (Cursor, Copilot, Gemini) across various frameworks.
-- **Stack**: Node.js, TypeScript, Vitest, Commander.js, `@clack/prompts`, EJS.
-- **Testing**: We maintain a 100% unit test coverage using Vitest. Always run `npm run test` before committing.
 
-## 🚀 Setting Up Your Local Agent Rules
-We believe in "dogfooding" our own product. This repository does not contain hard-coded `.cursorrules` or `.agents/` folders because we want you (the agent) to generate them dynamically!
+- **Name**: `create-code-buddy` (`ccb` for short)
+- **Purpose**: A CLI that centralizes AI agent context in one `.codebuddy/` folder and
+  compiles it into the format each target agent actually reads — Cursor, Claude Code,
+  Cline, Copilot, Gemini, Windsurf today.
+- **Stack**: Node.js, TypeScript, Vitest, Commander.js, `@clack/prompts`, the `yaml`
+  package for real frontmatter parsing.
+- **Testing**: Real integration tests against temp-dir workspaces, not mocked
+  filesystems — see `src/test/workspace.ts`. A coverage gate is enforced
+  (`vitest.config.ts`); run `npm test` before committing, and `npm run typecheck` and
+  `npm run build` too.
 
-Before you make any changes to this repository, **you must execute the following command to generate your own local rules**:
+## Active hardening effort
 
-```bash
-npx tsx src/index.ts init --yes --framework nodejs --agent generic --options '{"architecture":"express","language":"typescript"}'
-```
+This repo is partway through a hardening pass tracked in
+[docs/V1-HARDENING-PLAN.md](docs/V1-HARDENING-PLAN.md). **Read it before changing
+anything under `src/`.** It also compiles into every agent-specific rules folder as
+`.codebuddy/hardening-workflow.md` — if you're working here as e.g. Claude Code or
+Cursor rather than reading this file directly, your own rules folder already has it.
 
-*Note: Since you are currently inside the source code of the tool, running `npx tsx src/index.ts` allows you to test the local version of the CLI directly, rather than pulling the public version from NPM.*
+## How this repo manages its own rules
 
-After you run that command, the CLI will scaffold an `agent-config/` folder containing the rules you need to follow regarding TypeScript conventions, clean code, and testing standards. Read those files, and let's get to work!
+We dogfood the tool: this repo's own agent context lives in `.codebuddy/` and is
+compiled into `.claude/rules/`, `.cursor/rules/`, `.clinerules/`, `.agents/rules/`,
+`.github/instructions/` and `.windsurf/rules/` by the tool itself. Those compiled
+folders are gitignored — `.codebuddy/` is the only copy that's actually source.
 
----
+- **Read a rule**: any `.codebuddy/*.md` file, or its compiled copy in your own
+  agent's folder.
+- **Edit a rule**: edit the `.codebuddy/*.md` file directly, then run `npm run dev --
+  sync` to recompile (this runs the local source via `tsx`, not the published
+  package).
+- **Add a new rule**: `npm run dev -- add --name "topic/name" --globs "*.ts" --description "..."`
 
-## Automating `create-code-buddy` for Users
+## Working on this codebase (not a user's project)
 
-If you are an AI agent operating in a user's repository (NOT this repository), and the user asks you to "set up agent rules", "create code buddy", or "scaffold ai context", you should run this CLI in **non-interactive mode** on their behalf.
-
-### Non-Interactive Mode Usage
-
-You can bypass the interactive wizard entirely by using the `--yes` (or `-y`) flag along with the required configuration arguments.
-
-```bash
-npx create-code-buddy init --yes --framework <framework> --agent <agent> --options '{"key":"value"}'
-```
-
-#### Required Flags
-
-- `--yes` or `-y`: Tells the CLI to skip all interactive prompts and immediately generate files.
-- `--framework` or `-f`: The framework stack to scaffold. Available options:
-  - `laravel`
-  - `nextjs`
-  - `nodejs`
-  - `csharp-dotnet`
-  - `general`
-  - `empty`
-- `--agent` or `-a`: The target AI agent ecosystem to generate rules for. Available options:
-  - `gemini` (Generates `.agents/` standard format)
-  - `cursor` (Generates `.cursor/rules/` with `.mdc` files)
-  - `copilot` (Generates `.github/instructions/`)
-  - `generic` (Generates generic `agent-config/` standard markdown files)
-
-#### The `--options` Flag
-
-Many frameworks require additional context to generate the "Golden Templates" accurately. You can pass a JSON string to the `--options` (or `-o`) flag to provide this data. 
-
-**Next.js Options:**
-```bash
-npx create-code-buddy init -y -f nextjs -a cursor -o '{"router":"app","styling":"tailwind"}'
-```
-- `router`: `app` or `pages`
-- `styling`: `tailwind` or `css-modules`
-
-**Laravel Options:**
-```bash
-npx create-code-buddy init -y -f laravel -a gemini -o '{"frontend":"livewire","testing":"pest"}'
-```
-- `frontend`: `blade`, `livewire`, `inertia-vue`, `inertia-react`, `inertia-svelte`, `api-only`
-- `testing`: `pest` or `phpunit`
-
-*(If you omit the `--options` flag, the CLI will automatically fallback to sensible, modern defaults like App Router for Next.js, and Livewire/Pest for Laravel).*
-
-### Dynamic Rule Generation
-If you find that the user needs a new rule that isn't covered by the starter templates (e.g., "Add a rule about how we handle Stripe payments"), you can scaffold a new rule instantly:
+To run the CLI against a scratch directory while developing, use `npm run dev --
+<command>` (invokes `tsx src/index.ts`, the local source) rather than `npx
+create-code-buddy`, which would pull the published package:
 
 ```bash
-npx create-code-buddy add-rule payments
+npm run dev -- init --yes --agents cursor,claude
+npm run dev -- sync
+npm run dev -- add --name backend/database --globs "*.sql" --description "DB rules"
+npm run dev -- clean --hard --force
 ```
 
-This will automatically detect their configured agent folder (e.g., `.cursor/rules` or `.agents`) and generate a correctly formatted markdown file that you can then populate with the Stripe instructions.
+## Automating `create-code-buddy` for END USERS (a different repo)
+
+If you are an AI agent operating in **someone else's** repository, and the user asks
+you to set up agent rules or "create code buddy", run the published CLI
+non-interactively on their behalf:
+
+```bash
+npx create-code-buddy init --yes --agents <comma-separated-ids>
+```
+
+### `init` flags
+
+- `--yes` / `-y` — skip interactive prompts, use defaults or the flags below.
+- `--agents <ids>` / `-a` — comma-separated, no spaces. Valid ids today: `cursor`,
+  `claude`, `cline`, `copilot`, `gemini`, `windsurf`. An unrecognized id fails the
+  whole command rather than compiling nothing silently — check `ADAPTER_IDS` in
+  `src/adapters/index.ts` for the authoritative current list if this file is stale.
+- `--no-gitignore` — don't add the compiled folders to `.gitignore` (default: add them).
+- `--postinstall` / `--no-postinstall` — add or skip a `postinstall` script that runs
+  `sync` automatically for teammates. Defaults to **not adding it** under `--yes` —
+  don't rely on the old assumption that a `package.json` existing means one gets added.
+
+### Adding a rule for a user
+
+```bash
+npx create-code-buddy add --name "folder/topic" --globs "*.ts, *.tsx" --description "What this rule covers"
+```
+
+Detects the user's `.codebuddy/` automatically, writes the rule there, and re-syncs.
+Fails clearly (non-zero exit) if `.codebuddy/` doesn't exist yet — run `init` first.
+
+### What's out of scope right now
+
+There is no `--framework` flag, no per-framework template scaffolding, and no
+`agent-config/` output — an earlier prototype had these; this version doesn't. There is
+also no `add-rule` command; the current one is `add`. If older instructions or a stale
+copy of this file mention any of the above, this file is the one to trust.
