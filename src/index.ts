@@ -11,13 +11,13 @@ import { syncAgents, getConfig } from './sync';
 import { cleanAgents } from './clean';
 import { ADAPTER_IDS } from './adapters';
 import { fail } from './core/report';
-import { TOOL_NAME, SSOT_DIR, CONFIG_FILE } from './core/constants';
+import { TOOL_NAME, TOOL_VERSION, SSOT_DIR, CONFIG_FILE } from './core/constants';
 
 async function main() {
   program
     .name(TOOL_NAME)
     .description('A CLI tool to compile and manage agentic context and rules.')
-    .version('1.0.0')
+    .version(TOOL_VERSION)
     .addHelpText('after', `
 Examples:
   $ npx ${TOOL_NAME} init         # Interactive setup wizard

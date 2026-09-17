@@ -159,6 +159,22 @@ describe('--no-gitignore', () => {
   });
 });
 
+describe('--version', () => {
+  it('reports the version from package.json, not a hardcoded string', () => {
+    const root = makeWorkspace();
+    const expected = require('../package.json').version;
+
+    const result = run(root, ['--version']);
+
+    expect(result.status).toBe(0);
+    // Regression guard: --version used to report a hardcoded '1.0.0' while
+    // package.json said '1.0.0-beta.2', so the CLI claimed a version the
+    // package itself didn't ship.
+    expect(result.stdout.trim()).toBe(expected);
+    expect(result.stdout).not.toContain('0.0.0-unknown');
+  });
+});
+
 describe('clean --hard safety (Task 3.8)', () => {
   // The `run()` harness spawns with stdin: 'ignore', which is exactly what a
   // non-interactive shell (a git hook, a CI step) looks like: not a TTY.

@@ -9,6 +9,37 @@
 export const TOOL_NAME = 'create-code-buddy';
 export const TOOL_BIN = 'ccb';
 
+/** Reported by `--version` when package.json can't be read at all. */
+const UNKNOWN_VERSION = '0.0.0-unknown';
+
+/**
+ * The tool's version, read from package.json — the one place npm already
+ * keeps authoritative.
+ *
+ * `--version` used to report a hardcoded '1.0.0' while package.json said
+ * '1.0.0-beta.2', so the CLI claimed a version the package itself didn't.
+ * Deliberately NOT an environment variable: there is no env at install time
+ * that would carry this, so `npx create-code-buddy --version` would report
+ * nothing for the people most likely to ask.
+ *
+ * Resolved relative to this file at runtime rather than imported statically:
+ * a static `import '../../package.json'` would pull the file into the
+ * compilation and push `rootDir` above `src/`, changing the whole emitted
+ * output layout. The relative depth is the same in both contexts —
+ * `src/core/` in dev via tsx, `dist/core/` once published — and npm always
+ * ships package.json at the package root.
+ */
+function readPackageVersion(): string {
+  try {
+    const pkg = require('../../package.json') as { version?: string };
+    return pkg.version ?? UNKNOWN_VERSION;
+  } catch {
+    return UNKNOWN_VERSION;
+  }
+}
+
+export const TOOL_VERSION = readPackageVersion();
+
 /** The single-source-of-truth directory holding the user's authored rules. */
 export const SSOT_DIR = '.codebuddy';
 export const CONFIG_FILE = 'config.json';
