@@ -13,31 +13,16 @@ rename a one-line change instead of a 54-site find-and-replace.
 
 ## Handoff readiness
 
-Phases 1 and 2 are complete. **103 tests: 86 passing, 17 `it.fails` carrying the
-specification for Phase 3.** (Task 3.3, deselected agents, is done — Phase 2's registry
-loop fixed it as a documented side effect of Task 2.4; its test is promoted and passing.)
+Phases 1, 2 and 3 are complete. **106 tests, all passing, zero `it.fails`.** Every
+adapter's output format is now verified against that tool's own current documentation
+(not assumed from the original audit) — see each task's notes in Phase 3 for sources and
+dates. Two decisions came out of that research that are still open, not technical work:
 
-| Phase 3 task | Pinned by |
-|---|---|
-| 3.1 Copilot `applyTo` | `sync.test.ts` — applyTo is one comma-joined string |
-| 3.2 Cursor `globs` / `alwaysApply` | `sync.test.ts` — bare comma form, alwaysApply emitted |
-| 3.4 Scoped `.gitignore` | `sync.test.ts` — `.claude/rules/`, never `.claude/` |
-| 3.5 Exit codes | `cli.test.ts` — real subprocess exit status |
-| 3.6 Unknown agent ids | `cli.test.ts` — rejected, offending id named |
-| 3.7 `--yes` postinstall consent | `cli.test.ts` — default off, `--postinstall` opts in |
-| 3.8 Hard-clean backup | `clean.test.ts` — ignore entry survives and matches |
-| 3.11 Gemini skill | `sync.test.ts` — SKILL.md emitted, legacy orphans collected |
-
-Tasks 3.9 (glob prefixing), 3.10 (Windsurf format) and 3.12 (Claude Code format, found
-while executing Phase 2) are deliberately unspecified — they are maintainer decisions,
-flagged in the plan and, where a test exists at all, in the tests. An executing agent
-should raise them, not guess.
-
-Each Phase 3 fix lives behind a `legacy-format.ts` call in its adapter
-(`src/adapters/*.ts`) — the fix is: stop calling the legacy shim, call
-`renderFrontmatter`/`joinGlobs` from `core/rule.ts` instead, update the golden snapshot
-in the same commit so the diff shows exactly which bytes changed, and promote that
-adapter's `it.fails`.
+- **Windsurf has rebranded to Devin Desktop.** `.windsurf/rules/` still works (documented
+  fallback); `.devin/rules/` is the new preferred location. Whether to also target it, or
+  rename the adapter/id, is unresolved (Task 3.10).
+- Whether to keep Cline and Windsurf as first-class, equally-presented options, or mark
+  them differently in the wizard — raised in conversation, not yet decided or acted on.
 
 **The handoff package is this document plus the test suite on
 `hardening/phase-1-foundation`.** The plan alone is not sufficient; the tests are the
@@ -414,22 +399,34 @@ proceeding.
 
 ---
 
-## PHASE 3 — Correctness ⏸ 8 of 11 done, 3 blocked on maintainer decisions
+## PHASE 3 — Correctness ✅ COMPLETE
 
-Landed on `hardening/phase-1-foundation` (Sonnet). 105 tests: 104 passing, 1 `it.fails`
-remaining. Done: 3.1, 3.2, 3.3 (Phase 2), 3.4, 3.5, 3.6, 3.7, 3.8, 3.11. Every fix
-verified against the real built binary in a scratch directory, not just the mocked
-suite — each commit records what was run and what came out.
+Landed on `hardening/phase-1-foundation` (Sonnet). 106 tests, all passing, zero
+`it.fails` remaining. Every fix verified against the real built binary in a scratch
+directory, not just the mocked suite — each commit records what was run and what came
+out.
 
-**Blocked, not skipped:**
+**3.9, 3.10 and 3.12 were initially parked as maintainer decisions, then resolved via
+direct research rather than left as guesses:**
 
-- **3.9 / 3.10 (Cline, Windsurf)** — parked pending a scope decision: keep them
-  first-class, or mark them experimental for this launch. See the conversation for the
-  reasoning; nothing in the adapters changed either way.
-- **3.12 (Claude format)** — still open; unrelated to the 3.9/3.10 decision, needs its
-  own answer (see the task itself).
+- **3.9 (Cline)** — verified against docs.cline.bot: globs are matched as written, no
+  prefixing convention exists. The old recursive-wildcard prefix was this adapter's own
+  invention. Removed.
+- **3.10 (Windsurf)** — the bigger finding. The "comparable tooling has dropped Windsurf
+  support" signal that flagged this task was a rebrand, not an abandonment: Windsurf is
+  now Devin Desktop (docs.windsurf.com 307s to docs.devin.ai, confirmed 2026-09-17).
+  `.windsurf/rules/` is the documented, still-working fallback; `.devin/rules/` is the
+  new preferred location. Real format is a `trigger` field (`always_on` / `glob`), not
+  the passthrough the old adapter wrote — which Windsurf's current tooling likely never
+  read at all. Fixed to target the confirmed-working fallback path with the correct
+  schema. **Not resolved:** whether to also target `.devin/rules/`, or rename the
+  adapter and its `--agents` id — a further, separate decision from getting the current
+  id and directory to actually work.
+- **3.12 (Claude)** — verified: project-level `.claude/rules/*.md` uses the same `paths:`
+  block list as Cline. Both now share one `renderPathsRule()` (`adapters/paths-format.ts`)
+  rather than duplicating the same logic per adapter.
 
-**One finding from executing 3.11**, folded into the task below: a true redirect (skill
+**One finding from executing 3.11**, folded into the task itself: a true redirect (skill
 file *replacing* the normal rule output, matching the original 515aaa3 exactly) would
 need `outputPath()` to return a path outside its own `rulesDir` via `../`, which the
 `rulesDir`-scoped garbage collector can never discover again if the source rule is later
@@ -521,24 +518,24 @@ Separately: `clean --hard` uses two `confirm()` prompts, which hang on non-TTY s
 Add a `--force` flag (a non-TTY run without `--force` should fail with a clear message
 rather than hang).
 
-### 3.9 — Decide: glob `**/` prefixing *(maintainer decision — do not guess)*
-`src/sync.ts:263` rewrites `*.test.ts` → `**/*.test.ts` for Cline only. The prevailing
-convention is to pass globs through verbatim everywhere. Options: (a) pass through,
-(b) prefix consistently for every adapter, (c) keep the inconsistency.
+### 3.9 — ✅ RESOLVED: glob prefixing removed
+Verified against docs.cline.bot/customization/cline-rules (2026-09-17): `paths` is
+matched as written, no prefixing convention exists. The recursive-wildcard prefix
+`src/sync.ts:263` used to add for Cline alone was this adapter's own invention. Removed;
+now shared with Claude (3.12) via `adapters/paths-format.ts`.
 
-**Recommendation: (a).** Silently rewriting the user's stated intent is surprising, and
-the behavior currently differs per adapter for no documented reason. Surface a warning
-later in a `doctor` command instead.
+### 3.10 — ✅ RESOLVED: Windsurf is now Devin Desktop
+The "dropped rules support for Windsurf altogether" signal that flagged this task was a
+rebrand, not an abandonment: docs.windsurf.com 307-redirects to docs.devin.ai (confirmed
+2026-09-17). `.windsurf/rules/` is the documented, still-working backward-compatible
+fallback; `.devin/rules/` is the new preferred location. Real format is a `trigger`
+field — `always_on` or `glob` (paired with `globs`, which uses the same bare
+non-YAML form as Cursor's). Fixed in `adapters/windsurf.ts` to target the confirmed
+fallback path with the correct schema.
 
-### 3.10 — Verify Windsurf's current format *(research task)*
-Notably, tooling elsewhere in the ecosystem has **dropped rules support for Windsurf
-altogether**, which suggests the format moved. Our adapter
-passes `description`/`globs` straight through, which Windsurf may well ignore, making
-those rules silently inert.
-
-Check current Windsurf docs for the real frontmatter (last known: a `trigger:` key with
-values like `always_on` / `glob`, alongside `globs:`). Update the adapter, or if it can't
-be verified, say so in the README rather than implying it works.
+**Still open, a separate decision:** whether to also target `.devin/rules/`, or rename
+the adapter and its `--agents` id to match the current product name. Not attempted here
+— this fix only makes the id and directory already shipped actually work.
 
 ### 3.11 — Restore the Gemini skill
 Commit `515aaa3` shipped `codebuddy-system.md` as a native Gemini Skill; the
@@ -550,17 +547,12 @@ Restore it via the `extraFiles` hook from Task 2.1, **with a test this time.** A
 the Gemini adapter collect stale files from the legacy locations so existing users'
 orphans get cleaned up.
 
-### 3.12 — Claude Code's format *(gap found executing Phase 2 — maintainer decision)*
-Section 1's format reference table states Claude Code's target is a `paths:` block list
-— the same shape as Cline — but no task above covers it and no test pins it. The current
-adapter still emits Cursor-style `description`/`globs`, ported verbatim in Phase 2
-(`src/adapters/claude.ts`) precisely because nothing said otherwise.
-
-Two things to settle, not to guess: whether `paths:` is actually correct for Claude
-Code's rule format today (unverified, same caveat as Windsurf's Task 3.10), and whether
-it should carry a `description` line the way Cline's doesn't. Once decided, this is the
-same shape of fix as 3.1/3.2 — replace the legacy-format call in `claude.ts`, add the
-test first.
+### 3.12 — ✅ RESOLVED: Claude confirmed, shares Cline's renderer
+Confirmed: project-level `.claude/rules/*.md` uses a `paths:` block list, no
+`description` field — identical to Cline's format. (A documented gap affects only
+user-level `~/.claude` rules; this tool never writes there.) Both adapters now call the
+same `renderPathsRule()` in `adapters/paths-format.ts` instead of duplicating identical
+logic, or — as happened with Cline's prefix bug — reproducing a wrong one twice.
 
 ---
 
