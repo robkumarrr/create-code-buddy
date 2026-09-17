@@ -162,6 +162,35 @@ describe('smart clean', () => {
   });
 });
 
+describe('AGENTS.md block', () => {
+  it('is removed by a hard reset, which deletes what it points at', async () => {
+    const root = await syncedWorkspace(['cursor']);
+    writeFile(root, 'AGENTS.md', '# Mine\n\nHand-written.\n');
+    await syncAgents(root);
+    expect(readFile(root, 'AGENTS.md')).toContain('create-code-buddy:start');
+
+    vi.mocked(confirm).mockResolvedValue(true);
+    await cleanAgents(root, true);
+
+    // Leaving it behind would point agents at a .codebuddy/ that no longer
+    // exists -- worse than an orphaned file, since it actively misdirects.
+    const content = readFile(root, 'AGENTS.md');
+    expect(content).not.toContain('create-code-buddy:start');
+    expect(content).toContain('Hand-written.');
+  });
+
+  it('is removed by a smart clean, like the .gitignore block', async () => {
+    const root = await syncedWorkspace(['cursor']);
+    expect(exists(root, 'AGENTS.md')).toBe(true);
+
+    vi.mocked(multiselect).mockResolvedValue(['.cursor/rules']);
+    vi.mocked(confirm).mockResolvedValue(true);
+    await cleanAgents(root);
+
+    expect(exists(root, 'AGENTS.md')).toBe(false);
+  });
+});
+
 describe('hard reset', () => {
   it('requires both confirmations before deleting anything', async () => {
     const root = await syncedWorkspace(['cursor']);

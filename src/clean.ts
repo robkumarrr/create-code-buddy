@@ -6,6 +6,7 @@ import { updateGitignore } from './sync';
 import { WATERMARK, SSOT_DIR, POSTINSTALL_SCRIPT } from './core/constants';
 import { getRuleFiles, pruneEmptyDirs } from './core/fs';
 import { ADAPTERS } from './adapters';
+import { updateAgentsMd } from './core/agents-md';
 
 /**
  * Colors used only for this folder-selection prompt, keyed by adapter id.
@@ -117,6 +118,10 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false, 
     }
     console.log(pc.dim('  Cleaned .gitignore entries'));
 
+    // The pointer would otherwise survive the thing it points at, telling
+    // agents to read a .codebuddy/ that no longer exists.
+    updateAgentsMd(projectRoot, [], false);
+
     const pkgPath = path.join(projectRoot, 'package.json');
     if (fs.existsSync(pkgPath)) {
       try {
@@ -223,6 +228,7 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false, 
   }
 
   updateGitignore(projectRoot, [], true);
+  updateAgentsMd(projectRoot, [], false);
   console.log(pc.dim('\n  Cleaned .gitignore entries'));
   console.log(pc.green(`\n✔ Cleaned ${deletedCount} generated file${deletedCount !== 1 ? 's' : ''}.\n`));
 }
