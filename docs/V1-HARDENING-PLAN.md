@@ -11,22 +11,31 @@ rename a one-line change instead of a 54-site find-and-replace.
 
 ---
 
-## Handoff readiness
+## Status
 
-Phases 1, 2 and 3 are complete. **106 tests, all passing, zero `it.fails`.** Every
-adapter's output format is now verified against that tool's own current documentation
-(not assumed from the original audit) — see each task's notes in Phase 3 for sources and
-dates. Two decisions came out of that research that are still open, not technical work:
+**Phases 1–5 complete. 131 tests, all passing, zero `it.fails`.** Coverage gated at
+83% statements / 77.6% branches / 91.8% functions / 85.5% lines.
 
-- **Windsurf has rebranded to Devin Desktop.** `.windsurf/rules/` still works (documented
-  fallback); `.devin/rules/` is the new preferred location. Whether to also target it, or
-  rename the adapter/id, is unresolved (Task 3.10).
-- Whether to keep Cline and Windsurf as first-class, equally-presented options, or mark
-  them differently in the wizard — raised in conversation, not yet decided or acted on.
+Every adapter's output format is verified against that tool's own current documentation
+rather than assumed — see each Phase 3 task for sources and dates.
 
-**The handoff package is this document plus the test suite on
-`hardening/phase-1-foundation`.** The plan alone is not sufficient; the tests are the
-part that cannot be misread.
+**Still open, as decisions rather than work:**
+
+- **`.devin/rules/`** — Windsurf rebranded to Devin Desktop. We target `.windsurf/rules/`,
+  the documented backward-compatible fallback. Whether to also write `.devin/rules/`, or
+  rename the adapter id, is unresolved (Task 3.10). The id is a public surface — it
+  appears in users' `config.json`, the `--agents` flag, and `codebuddy-system.md` — so
+  renaming it is a breaking change for no functional gain.
+- **`postinstall` vs `prepare`** — `npx create-code-buddy sync` on postinstall runs on
+  every `npm ci`, hits the network and fails offline (Task 3.7). Flagged, not changed.
+- **SSOT layout** — `.codebuddy/` currently mixes durable rules with transient planning
+  documents, and compiles all of them to all six agents. See the note below.
+
+**Next up:** an MCP server, on its own branch. MCP is what makes the tool reliably usable
+by any agent — a rules file asking an agent to shell out is documentation; a typed
+`get_rules_for_file(path)` tool is capability, and it loads rules on demand rather than
+always-on. `AGENTS.md` (Phase 5) is the zero-config floor beneath it for agents that
+don't speak MCP.
 
 ---
 
