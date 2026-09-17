@@ -144,7 +144,6 @@ describe('format fidelity', () => {
 
   it.each([
     ['gemini', '.agents/rules/testing.md'],
-    ['windsurf', '.windsurf/rules/testing.md'],
     ['claude', '.claude/rules/testing.md'],
   ])('%s: multi-glob output parses as valid YAML', async (agent, outputPath) => {
     const root = makeWorkspace();
@@ -153,6 +152,39 @@ describe('format fidelity', () => {
     await syncAgents(root);
 
     expect(() => readFrontmatter(root, outputPath)).not.toThrow();
+  });
+
+  it('windsurf: writes a bare comma-joined globs line with trigger: glob', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['windsurf'], rules: { 'testing.md': MULTI_GLOB } });
+
+    await syncAgents(root);
+
+    const contents = readFile(root, '.windsurf/rules/testing.md');
+    const { frontmatter } = splitFile(contents);
+
+    // NOT run through readFrontmatter/YAML.parse deliberately: a pattern
+    // starting with two asterisks is YAML alias syntax, so — like Cursor's
+    // own globs line — this is not strict YAML. Confirmed against Devin
+    // Desktop's docs (docs.windsurf.com now redirects there; Windsurf
+    // rebranded, .windsurf/rules/ is the documented, still-supported
+    // fallback location). Do not "fix" this by quoting the globs.
+    expect(frontmatter).toContain('trigger: glob');
+    expect(frontmatter).toContain('description: Testing standards');
+    expect(frontmatter).toContain('globs: *.test.ts,*.spec.ts');
+    expect(contents).toContain(WATERMARK);
+  });
+
+  it('windsurf: always-on rules use trigger: always_on and are valid YAML', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['windsurf'], rules: { 'architecture.md': UNIVERSAL } });
+
+    await syncAgents(root);
+
+    // Unlike the targeted case above, there's no globs field here to break
+    // YAML-ness, so this one IS checked with a real parse.
+    const fm = readFrontmatter(root, '.windsurf/rules/architecture.md');
+    expect(fm.trigger).toBe('always_on');
   });
 
   it('every adapter preserves the rule body verbatim', async () => {
