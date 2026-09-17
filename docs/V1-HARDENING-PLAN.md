@@ -556,7 +556,12 @@ logic, or — as happened with Cline's prefix bug — reproducing a wrong one tw
 
 ---
 
-## PHASE 4 — Hygiene
+## PHASE 4 — Hygiene ✅ COMPLETE
+
+Landed on `hardening/phase-1-foundation` (Sonnet). 113 tests, all passing. Coverage
+gate enforced at 78/70/85/80 (statements/branches/functions/lines), real numbers with a
+small margin, not aspirational ones — see Task 4.1's note on why `index.ts` is excluded
+from instrumentation rather than dragging the gate down over a measurement blind spot.
 
 ### 4.1 — Coverage gate
 `vitest.config.ts` currently omits `all: true`, so `add.ts` (137 lines) and `index.ts`
@@ -596,24 +601,91 @@ the 54 hardcoded sites there are today. **Do not rename anything now.**
 
 ---
 
-## PHASE 5 — `AGENTS.md` + `CLAUDE.md` adapters
+## PHASE 5 — `AGENTS.md` pointer ⚙️ REDESIGNED 2026-09-17, not yet implemented
 
-Deliberately last: it is a new capability, and it should sit on a foundation that works.
+**Handoff: Opus.** Sonnet did Phases 3–4 and the research below; this phase's actual
+implementation is intentionally left for a fresh pass rather than rushed in alongside
+everything else in this session.
 
-`AGENTS.md` and `CLAUDE.md` at the repo root are first-class targets elsewhere in the
-ecosystem, and we write neither. AGENTS.md is becoming the cross-agent convention, which
-cuts both ways — it erodes the "compile to six formats" pitch, *and* it makes us the
-tool that generates it. Being the last SSOT tool without an AGENTS.md emitter is the
-worst of both.
+### The design changed — read this before building the original version above
 
-Build as two more adapters:
-- `agentsmd` → root `AGENTS.md`, rules concatenated under `##` headings.
-- `claudemd` → root `CLAUDE.md`, same shape.
+The original plan (still visible below, struck through in spirit if not in markdown)
+was two adapters that concatenate every rule's full body under `##` headings into one
+`AGENTS.md` and one `CLAUDE.md`. **Don't build that.** The maintainer's actual intent,
+stated directly: `AGENTS.md` should be a **thin pointer** into `.codebuddy/`, not a
+second copy of the content — "now it's just one big-ass messy md file" is the exact
+failure mode a full-dump design produces, and it gets worse as more rules are added
+rather than better.
 
-Both need care the others don't: these files are **frequently hand-edited**, and the
-`.claude/rules/` adapter may already cover Claude Code. Use a watermarked
-managed block (same start/end marker pattern as `updateGitignore`) so hand-written
-content above and below survives a sync. Do not clobber a whole file we did not create.
+Concretely: `AGENTS.md` gets a short, managed **index** — each rule's description and
+globs, one line each — telling the agent which `.codebuddy/*.md` file to read for what
+it's currently working on, not the rule bodies themselves. The agent's own file-reading
+tools do the rest, on demand, instead of every rule's full text riding along in context
+on every single turn regardless of relevance.
+
+### This is better-grounded than a guess — it matches AGENTS.md's own conventions
+
+Researched directly (agents.md, GitHub, 2026-09-17), not assumed:
+
+- **No mandated format.** "AGENTS.md is just standard Markdown... the agent simply
+  parses the text you provide." A pointer is exactly as valid as a full dump.
+- **Nested `AGENTS.md` files are explicitly supported and recommended for monorepos** —
+  "agents automatically read the nearest file in the directory tree, so the closest one
+  takes precedence." OpenAI's own repo ships 88 of them. This validates an index/pointer
+  pattern at the root over one flattened document, and opens a real future direction
+  (out of scope for v1): per-directory `AGENTS.md` files mirroring `.codebuddy/`'s own
+  structure, each scoped to that subtree. Don't build that yet — flagging it so the
+  chosen v1 design doesn't foreclose it.
+- **Adoption is large enough that this one adapter is a meaningful compatibility
+  multiplier, not just a sixth format to match.** Formalized as an open spec in August
+  2025 (OpenAI, with Google/Cursor/Factory), donated to the Linux Foundation's Agentic AI
+  Foundation in December 2025. As of December 2025: 60,000+ repos, 20+ tools, including
+  Codex (the specific gap that surfaced this whole redesign — it isn't in `ADAPTERS` at
+  all today), Cursor, Copilot, Gemini CLI, Aider, Zed, Factory, Jules, OpenHands and
+  Continue.dev. Sources disagreed on whether Claude Code and Windsurf/Devin Desktop read
+  it too — **verify both specifically before assuming either does**, same posture as
+  Task 3.10's Windsurf research; don't compound one unverified claim on top of another.
+- This also reframes how much individual per-tool format perfection matters: a
+  well-designed `AGENTS.md` pointer is a strong generic fallback across many tools this
+  project will never write a dedicated adapter for. It doesn't replace getting Cursor,
+  Claude Code, Copilot and Gemini exactly right — those stay first-class — but it means
+  the long tail of "many other implementations out there," which is real and growing,
+  doesn't need to be chased one adapter at a time.
+- **Independent confirmation this was already the plan once:** `.codebuddy/specs/v1-migration.md`
+  (checked into this repo, predating this hardening effort) already describes, for a
+  hypothetical future rename, "Update `AGENTS.md`: Swap the **universal pointer block**
+  text" — the pointer-block shape isn't a new idea, it's one that was already sketched
+  and then not built.
+
+### Mechanism
+
+- On `init` or `sync`: if no root `AGENTS.md` exists, create one. If one exists — hand-
+  written, or from another tool — inject a **managed block** using the exact pattern
+  `updateGitignore` already uses for `.gitignore` (new `AGENTS_MD_START`/`AGENTS_MD_END`
+  constants in `core/constants.ts`). Never touch content outside that block; this is the
+  same non-negotiable as the watermark's "never delete what we didn't generate."
+- Block content: for each `.codebuddy/*.md` rule, one line — its path, description, and
+  globs — plus a short instruction to read the referenced file when it's relevant, and a
+  reminder to run `sync` after hand-editing anything in `.codebuddy/`. Not the rule
+  bodies. Keep it genuinely short; growing linearly with rule *count* in a few words per
+  rule is the acceptable case, growing with rule *content* is the failure case being
+  fixed.
+- This is a different shape than the other six adapters and probably shouldn't be
+  force-fit into the existing `AgentAdapter` interface — `outputPath`/`render` assume
+  one output file per rule; this is one summary file for *all* rules. Design its own
+  mechanism rather than bending the interface to match; bending it to fit one odd case
+  is exactly the kind of thing Phase 2 was built to avoid doing per-adapter.
+- Open product decision, not a technical one: should this generate unconditionally
+  (every `init`/`sync`, regardless of which of the six `--agents` were selected), or
+  gate behind something like an `agentsmd` id in the existing selection model? Given how
+  broadly and passively it's read — most tools just check whether the file exists, the
+  user doesn't "select" it the way they pick Cursor or Claude Code — unconditional
+  generation seems closer to correct, but it's the maintainer's call, not an assumption
+  to bake in silently.
+- `CLAUDE.md`: hold until Claude Code's actual `AGENTS.md` support is verified. If
+  confirmed, a separate root `CLAUDE.md` may be partially redundant with the `AGENTS.md`
+  pointer, or may want the identical thin-pointer treatment for consistency rather than
+  the original full-dump design — a decision, not a default, once the research lands.
 
 ---
 
