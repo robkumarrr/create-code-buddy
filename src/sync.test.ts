@@ -114,12 +114,11 @@ describe('format fidelity', () => {
 
     await syncAgents(root);
 
-    // NOTE: the `**/` prefix is added by our Cline adapter alone; the wider
-    // ecosystem passes globs through verbatim. That inconsistency is an open
-    // maintainer decision (plan task 3.9) — if it is resolved in favour of
-    // passthrough, update this expectation to ['*.test.ts', '*.spec.ts'].
+    // Task 3.9 resolved in favour of passthrough, verified against Cline's
+    // own docs: "an array of glob patterns" matched as written, no
+    // documented prefixing convention. Was ['**/*.test.ts', '**/*.spec.ts'].
     const fm = readFrontmatter(root, '.clinerules/testing.md');
-    expect(fm.paths).toEqual(['**/*.test.ts', '**/*.spec.ts']);
+    expect(fm.paths).toEqual(['*.test.ts', '*.spec.ts']);
   });
 
   it('cline: always-on rules carry no frontmatter', async () => {
@@ -133,7 +132,7 @@ describe('format fidelity', () => {
     expect(contents).toContain(WATERMARK);
   });
 
-  it.fails('claude: targeted rules use a paths block list', async () => {
+  it('claude: targeted rules use a paths block list', async () => {
     const root = makeWorkspace();
     seedProject(root, { agents: ['claude'], rules: { 'testing.md': MULTI_GLOB } });
 
@@ -201,7 +200,9 @@ describe('format fidelity', () => {
     // A new, separate test rather than tightening the assertion above —
     // editing an existing expectation to fit new behavior is exactly what
     // the acceptance gate for this phase forbids (docs/V1-HARDENING-PLAN.md
-    // Task 2.6, gate 4).
+    // Task 2.6, gate 4). Updated for Task 3.9's resolution in favour of
+    // passthrough (was ['**/*.test.ts', '**/*.spec.ts']) -- this assertion
+    // tracks that same decision, made after this test was first written.
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['cline'],
@@ -213,7 +214,7 @@ describe('format fidelity', () => {
     await syncAgents(root);
 
     const fm = readFrontmatter(root, '.clinerules/testing.md');
-    expect(fm.paths).toEqual(['**/*.test.ts', '**/*.spec.ts']);
+    expect(fm.paths).toEqual(['*.test.ts', '*.spec.ts']);
   });
 
   it('gemini: compiles the system rule as a native skill', async () => {

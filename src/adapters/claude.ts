@@ -1,15 +1,15 @@
 import type { AgentAdapter } from './types';
 import type { Rule } from '../core/rule';
-import { WATERMARK } from '../core/constants';
-import { legacyGlobsField } from './legacy-format';
+import { renderPathsRule } from './paths-format';
 
 /**
- * Ported verbatim from the old `if (agent === 'claude')` block in sync.ts.
- *
- * The plan's verified format reference puts Claude Code on a `paths:` block
- * list instead — that switch is not a Phase 2 task, and is left for whoever
- * picks up the Claude format alongside Cline's (they share the same target
- * shape). This file preserves exactly what ships today.
+ * Plan Task 3.12, resolved: Claude Code's `.claude/rules/*.md` format uses a
+ * `paths:` YAML block list, not the Cursor-style `description`/`globs` the
+ * old block ported verbatim in Phase 2 for lack of a numbered task. Project-
+ * level rules (what this tool writes) are confirmed working with this
+ * format; a documented gap affects only user-level `~/.claude` rules, which
+ * this tool never touches. Shared with Cline via paths-format.ts, whose
+ * documented format turns out to be identical.
  */
 const claude: AgentAdapter = {
   id: 'claude',
@@ -21,9 +21,7 @@ const claude: AgentAdapter = {
     return rule.relPath;
   },
 
-  render(rule: Rule): string {
-    return `---\ndescription: ${rule.description}\nglobs: ${legacyGlobsField(rule.globs)}\n---\n${WATERMARK}\n${rule.body}`;
-  },
+  render: renderPathsRule,
 };
 
 export default claude;

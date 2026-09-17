@@ -1,18 +1,15 @@
 import type { AgentAdapter } from './types';
 import type { Rule } from '../core/rule';
-import { WATERMARK } from '../core/constants';
+import { renderPathsRule } from './paths-format';
 
 /**
- * Ported verbatim from the old `if (agent === 'cline')` block in sync.ts.
- *
- * `alwaysApply` already models exactly what the old `isAlwaysOn` string check
- * computed by hand, so no legacy-format shim is needed here — this is the one
- * adapter that already reads cleanly off the normalized `Rule`.
- *
- * The recursive-wildcard prefix added to bare filenames below is plan Task
- * 3.9's open question: the wider ecosystem passes globs through verbatim,
- * and Cline is the only adapter here that rewrites them. Left as-is; a
- * maintainer decision, not a bug to fix in a pure refactor.
+ * Plan Task 3.9, resolved: Cline's own documentation describes `paths` as
+ * "an array of glob patterns" matched as written, with no mention of any
+ * prefixing convention. The old recursive-wildcard prefix on bare filenames
+ * was this adapter's own invention, not something Cline's docs or the wider
+ * ecosystem does — removed in favour of passing every glob through exactly
+ * as the SSOT rule states it. See paths-format.ts, shared with Claude Code,
+ * whose documented format turns out to be identical.
  */
 const cline: AgentAdapter = {
   id: 'cline',
@@ -24,15 +21,7 @@ const cline: AgentAdapter = {
     return rule.relPath;
   },
 
-  render(rule: Rule): string {
-    if (rule.alwaysApply) {
-      return `${WATERMARK}\n${rule.body}`;
-    }
-
-    const patterns = rule.globs.map((glob) => (glob.includes('/') ? glob : `**/${glob}`));
-    const pathsBlock = patterns.map((pattern) => `  - "${pattern}"`).join('\n');
-    return `---\npaths:\n${pathsBlock}\n---\n${WATERMARK}\n${rule.body}`;
-  },
+  render: renderPathsRule,
 };
 
 export default cline;
