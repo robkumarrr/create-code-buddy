@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import pc from 'picocolors';
-import { SSOT_DIR, CONFIG_FILE, WATERMARK, GITIGNORE_START, GITIGNORE_END } from './core/constants';
+import { SSOT_DIR, CONFIG_FILE, TOOL_NAME, WATERMARK, GITIGNORE_START, GITIGNORE_END } from './core/constants';
 import { getRuleFiles, writeFileDeep } from './core/fs';
 import { parseRule, type Rule } from './core/rule';
 import { fail } from './core/report';
@@ -80,7 +80,7 @@ function cleanStaleRules(targetBase: string, expectedRelativePaths: Set<string>)
 export async function syncAgents(projectRoot: string) {
   const config = getConfig(projectRoot);
   if (!config) {
-    fail('No .codebuddy/config.json found. Run `npx create-code-buddy init` first.');
+    fail(`No ${SSOT_DIR}/${CONFIG_FILE} found. Run \`npx ${TOOL_NAME} init\` first.`);
     return;
   }
 

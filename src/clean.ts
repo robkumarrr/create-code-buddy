@@ -3,7 +3,7 @@ import path from 'path';
 import pc from 'picocolors';
 import { confirm, multiselect, isCancel } from '@clack/prompts';
 import { updateGitignore } from './sync';
-import { WATERMARK, SSOT_DIR } from './core/constants';
+import { WATERMARK, SSOT_DIR, POSTINSTALL_SCRIPT } from './core/constants';
 import { getRuleFiles, pruneEmptyDirs } from './core/fs';
 import { ADAPTERS } from './adapters';
 
@@ -113,7 +113,7 @@ export async function cleanAgents(projectRoot: string, isHard: boolean = false, 
     if (fs.existsSync(pkgPath)) {
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-        if (pkg.scripts?.postinstall === 'npx create-code-buddy sync') {
+        if (pkg.scripts?.postinstall === POSTINSTALL_SCRIPT) {
           delete pkg.scripts.postinstall;
           if (Object.keys(pkg.scripts).length === 0) delete pkg.scripts;
           fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');

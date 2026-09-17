@@ -4,9 +4,10 @@ import pc from 'picocolors';
 import { PromptAnswers } from './prompts';
 import { BASELINE_RULES } from './defaults';
 import { syncAgents } from './sync';
+import { SSOT_DIR, CONFIG_FILE, POSTINSTALL_SCRIPT } from './core/constants';
 
 export async function generateConfig(answers: PromptAnswers, projectRoot: string) {
-  const codebuddyDir = path.join(projectRoot, '.codebuddy');
+  const codebuddyDir = path.join(projectRoot, SSOT_DIR);
   if (!fs.existsSync(codebuddyDir)) {
     fs.mkdirSync(codebuddyDir, { recursive: true });
   }
@@ -19,7 +20,7 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
         const pkgContent = fs.readFileSync(pkgPath, 'utf8');
         const pkg = JSON.parse(pkgContent);
         if (!pkg.scripts) pkg.scripts = {};
-        pkg.scripts.postinstall = 'npx create-code-buddy sync';
+        pkg.scripts.postinstall = POSTINSTALL_SCRIPT;
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
       } catch (err) {
         console.log(pc.yellow(`Warning: Could not inject postinstall script because package.json is malformed.`));
@@ -28,7 +29,7 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
   }
 
   // 1. Write the config file
-  const configPath = path.join(codebuddyDir, 'config.json');
+  const configPath = path.join(codebuddyDir, CONFIG_FILE);
   const config = {
     agents: answers.agents,
     gitignore_compiled_agents: answers.addToGitignore
@@ -46,7 +47,7 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
     }
   }
 
-  console.log(pc.green(`\n✔ Initialized Code Buddy SSOT at ${pc.bold('.codebuddy/')}`));
+  console.log(pc.green(`\n✔ Initialized Code Buddy SSOT at ${pc.bold(`${SSOT_DIR}/`)}`));
   if (createdCount > 0) {
     console.log(pc.dim(`   Scaffolded ${createdCount} baseline rules.`));
   }

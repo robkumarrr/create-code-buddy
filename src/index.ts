@@ -11,27 +11,28 @@ import { syncAgents, getConfig } from './sync';
 import { cleanAgents } from './clean';
 import { ADAPTER_IDS } from './adapters';
 import { fail } from './core/report';
+import { TOOL_NAME, SSOT_DIR, CONFIG_FILE } from './core/constants';
 
 async function main() {
   program
-    .name('create-code-buddy')
+    .name(TOOL_NAME)
     .description('A CLI tool to compile and manage agentic context and rules.')
     .version('1.0.0')
     .addHelpText('after', `
 Examples:
-  $ npx create-code-buddy init         # Interactive setup wizard
-  $ npx create-code-buddy edit         # Edit existing agent config
-  $ npx create-code-buddy add          # Interactively add a rule
-  $ npx create-code-buddy sync         # Manually compile rules
-  $ npx create-code-buddy clean        # Delete compiled folders
-  $ npx create-code-buddy list         # View and navigate rules
+  $ npx ${TOOL_NAME} init         # Interactive setup wizard
+  $ npx ${TOOL_NAME} edit         # Edit existing agent config
+  $ npx ${TOOL_NAME} add          # Interactively add a rule
+  $ npx ${TOOL_NAME} sync         # Manually compile rules
+  $ npx ${TOOL_NAME} clean        # Delete compiled folders
+  $ npx ${TOOL_NAME} list         # View and navigate rules
 `);
 
   program
     .command('init', { isDefault: true })
     .alias('edit')
     .alias('config')
-    .description('Scaffold or edit your .codebuddy/ SSOT and configure AI Agents')
+    .description(`Scaffold or edit your ${SSOT_DIR}/ SSOT and configure AI Agents`)
     .option('-y, --yes', 'Skip prompts and use default configuration')
     .option('-a, --agents <agents>', 'Comma-separated list of agents to configure (cursor,gemini,copilot,generic)')
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
@@ -46,15 +47,15 @@ Examples:
                        /  
 `;
       console.log(pc.cyan(asciiLogo));
-      intro(pc.bgCyan(pc.black(' create-code-buddy ')));
+      intro(pc.bgCyan(pc.black(` ${TOOL_NAME} `)));
 
       const existingConfig = getConfig(process.cwd());
       if (existingConfig) {
-        console.log(pc.dim('Found existing .codebuddy/config.json. Loading your settings...\n'));
+        console.log(pc.dim(`Found existing ${SSOT_DIR}/${CONFIG_FILE}. Loading your settings...\n`));
       } else {
-        console.log(pc.cyan('Welcome to create-code-buddy! 🤖\n'));
+        console.log(pc.cyan(`Welcome to ${TOOL_NAME}! 🤖\n`));
         console.log(pc.white('Instead of manually editing your AI agent\'s rules folder (.cursorrules, .agents, etc),'));
-        console.log(pc.white('you will now write your rules once in a centralized ') + pc.bold(pc.cyan('.codebuddy/')) + pc.white(' folder.'));
+        console.log(pc.white('you will now write your rules once in a centralized ') + pc.bold(pc.cyan(`${SSOT_DIR}/`)) + pc.white(' folder.'));
         console.log(pc.white('This wizard configures which agent folders we should auto-compile those rules into.\n'));
         console.log(pc.dim('(We\'ve pre-selected some defaults for you below, feel free to make your own selections)\n'));
       }
@@ -101,7 +102,7 @@ Examples:
   program
     .command('clean')
     .description('Remove compiled agent folders and clean up .gitignore')
-    .option('--hard', 'Factory reset: Also delete your .codebuddy/ source files (Irreversible!)')
+    .option('--hard', `Factory reset: Also delete your ${SSOT_DIR}/ source files (Irreversible!)`)
     .option('--force', 'Skip the --hard confirmation prompts (required in a non-interactive shell)')
     .action(async (cliOptions) => {
       // clean --hard's confirmations read from stdin, which a non-interactive

@@ -3,17 +3,17 @@ import path from 'path';
 import pc from 'picocolors';
 import { intro, outro, select, isCancel } from '@clack/prompts';
 import { exec } from 'child_process';
-import { SSOT_DIR } from './core/constants';
+import { SSOT_DIR, TOOL_NAME } from './core/constants';
 import { getRuleFiles } from './core/fs';
 
 export async function listRules(projectRoot: string = process.cwd()) {
   console.clear();
-  intro(pc.bgCyan(pc.black(` create-code-buddy: Navigating Rules `)));
+  intro(pc.bgCyan(pc.black(` ${TOOL_NAME}: Navigating Rules `)));
 
   const codebuddyDir = path.join(projectRoot, SSOT_DIR);
 
   if (!fs.existsSync(codebuddyDir)) {
-    outro(pc.red(`No .codebuddy folder found. Please run 'npx create-code-buddy init' first.`));
+    outro(pc.red(`No ${SSOT_DIR} folder found. Please run 'npx ${TOOL_NAME} init' first.`));
     process.exitCode = 1;
     return;
   }
@@ -21,7 +21,7 @@ export async function listRules(projectRoot: string = process.cwd()) {
   const files = getRuleFiles(codebuddyDir).map((f) => f.abs);
 
   if (files.length === 0) {
-    outro(pc.yellow(`No markdown rules found in .codebuddy.`));
+    outro(pc.yellow(`No markdown rules found in ${SSOT_DIR}.`));
     return;
   }
 
