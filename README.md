@@ -28,11 +28,16 @@ npx create-code-buddy init --yes --agents cursor,cline,gemini
 We natively compile your markdown rules into the exact format required by:
 
 - **Cursor** (`.cursor/rules/*.mdc`)
-- **Windsurf** (`.windsurf/rules/*.md`)
-- **Cline** (`.clinerules/*.md`) — *Includes native `paths:` YAML array conversion and always-on global rule parsing!*
-- **Claude Code** (`.claude/rules/*.md`)
-- **Gemini** (`.agents/*.md`)
-- **GitHub Copilot** (`.github/instructions/*.md`)
+- **Claude Code** (`.claude/rules/*.md`) — `paths:` block-list scoping, always-on rules carry no frontmatter
+- **Cline** (`.clinerules/*.md`) — same `paths:` format as Claude Code above
+- **GitHub Copilot** (`.github/instructions/*.instructions.md`)
+- **Gemini** (`.agents/rules/*.md`) — also restores this tool's own system rule as a native Gemini Skill
+- **Windsurf** (`.windsurf/rules/*.md`) — see note below; Windsurf rebranded to Devin Desktop
+
+> **Windsurf → Devin Desktop:** Windsurf's docs now redirect to Devin Desktop's. We
+> target `.windsurf/rules/`, which is documented as a supported backward-compatible
+> location — not the newer `.devin/rules/` path. If Devin Desktop drops that fallback in
+> a future release, this integration will need to move with it.
 
 ## 🛠 Core Commands
 
@@ -60,7 +65,22 @@ Safely removes generated rules from your agent folders. Personal (non-generated)
 npx create-code-buddy clean
 ```
 
-> **Need a factory reset?** Run `npx create-code-buddy clean --hard` to safely backup your SSOT as a `tar.gz` and wipe all agent integrations cleanly.
+> **Need a factory reset?** Run `npx create-code-buddy clean --hard` to safely backup your SSOT as a `tar.gz` and wipe all agent integrations cleanly. In a non-interactive shell (a script, a git hook), add `--force` to skip the confirmation prompts — without it, `--hard` fails with a clear message rather than hanging on a prompt nothing will ever answer.
+
+## 🚧 What this doesn't do yet
+
+Being upfront about the edges, since a bug report from someone who believed the docs
+costs more than a shorter feature list:
+
+- **No `AGENTS.md` or `CLAUDE.md` generation.** These are increasingly the convention
+  many tools (Codex among them) read directly — not yet a compile target here.
+- **No import from existing agent-specific rules.** If you already have `.cursor/rules/`
+  or similar, there's no command yet to pull them into `.codebuddy/` for you.
+- **No drift detection.** If you commit compiled folders for your team and someone hand-edits
+  one, nothing currently warns you before the next `sync` overwrites it.
+- **No MCP server.** Rules are compiled to static files; there's no live query interface.
+- Windsurf support targets the documented backward-compatible `.windsurf/rules/`
+  location, not Devin Desktop's newer `.devin/rules/` — see the note above.
 
 ## 🤝 Contributing
 Check out our [Contributing Guide](CONTRIBUTING.md) to get started!
