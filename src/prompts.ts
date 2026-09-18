@@ -2,31 +2,64 @@ import fs from 'fs';
 import path from 'path';
 import pc from 'picocolors';
 import { multiselect, select, isCancel } from '@clack/prompts';
+import { ADAPTERS } from './adapters';
+
+/**
+ * Colors for this agent-selection prompt, keyed by adapter id — the same
+ * mapping clean.ts uses for its own folder-selection prompt. Kept local
+ * rather than on `AgentAdapter` itself; see clean.ts for why.
+ */
+const AGENT_COLORS: Record<string, (s: string) => string> = {
+  cline: pc.blue,
+  claude: pc.yellow,
+  cursor: pc.cyan,
+  gemini: pc.magenta,
+  copilot: pc.green,
+  windsurf: pc.blue,
+};
+
+/**
+ * The multiselect options for "which agents should we compile for", derived
+ * from the same registry sync.ts and clean.ts read. Previously a
+ * hand-maintained array here, kept separately from clean.ts's own list —
+ * the two had already drifted from each other once.
+ */
+const AGENT_OPTIONS = ADAPTERS.map((adapter) => ({
+  value: adapter.id,
+  label: `${adapter.label.padEnd(15)} ${pc.dim((AGENT_COLORS[adapter.id] ?? pc.dim)(`(${adapter.rulesDir})`))}`,
+}));
 
 export interface PromptAnswers {
   agents: string[];
   addToGitignore: boolean;
   addPostinstall: boolean;
-  updateAgentsMd?: boolean;
+  addAgentsMd: boolean;
 }
 
 export interface RunPromptsArgs {
   yes?: boolean;
   agents?: string[];
   addToGitignore?: boolean;
-  updateAgentsMd?: boolean;
+  addPostinstall?: boolean;
+  addAgentsMd?: boolean;
 }
 
 export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<PromptAnswers | null> {
   const hasPackageJson = fs.existsSync(path.join(process.cwd(), 'package.json'));
+  // Asked either way: sync creates AGENTS.md when it's absent, so gating the
+  // question on the file existing would write it without ever asking.
   const hasAgentsMd = fs.existsSync(path.join(process.cwd(), 'AGENTS.md'));
 
   if (initialArgs.yes) {
     return {
       agents: initialArgs.agents || ['cursor', 'gemini'],
       addToGitignore: initialArgs.addToGitignore !== undefined ? initialArgs.addToGitignore : true,
-      addPostinstall: hasPackageJson,
-      updateAgentsMd: !!initialArgs.updateAgentsMd
+      // Defaults to false: --yes used to force this true whenever a
+      // package.json existed, with no flag to decline, so an agent following
+      // our own non-interactive instructions could edit a user's
+      // package.json without asking. --postinstall opts in explicitly.
+      addPostinstall: initialArgs.addPostinstall === true,
+      addAgentsMd: initialArgs.addAgentsMd !== false
     };
   }
 
@@ -34,16 +67,16 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
   let agents = initialArgs.agents || [];
   let addToGitignore = initialArgs.addToGitignore !== undefined ? initialArgs.addToGitignore : true;
   let addPostinstall = false;
-  let updateAgentsMd = false;
+  let addAgentsMd = initialArgs.addAgentsMd !== false;
 
-  const totalSteps = 2 + (hasPackageJson ? 1 : 0) + (hasAgentsMd ? 1 : 0);
+  const totalSteps = 3 + (hasPackageJson ? 1 : 0);
 
   const stepToType: Record<number, 'agents' | 'gitignore' | 'postinstall' | 'agentsmd'> = {};
   let currentStepIdx = 0;
   stepToType[currentStepIdx++] = 'agents';
   stepToType[currentStepIdx++] = 'gitignore';
   if (hasPackageJson) stepToType[currentStepIdx++] = 'postinstall';
-  if (hasAgentsMd) stepToType[currentStepIdx++] = 'agentsmd';
+  stepToType[currentStepIdx++] = 'agentsmd';
 
   while (step < totalSteps) {
     const currentAction = stepToType[step];
@@ -53,14 +86,7 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
       while (true) {
         agentsSelection = await multiselect({
           message: 'Which AI Agents do you want to compile rules for?',
-          options: [
-            { value: 'cline',   label: `Cline          ${pc.dim(pc.blue('(.clinerules)'))}` },
-            { value: 'claude',  label: `Claude Code    ${pc.dim(pc.yellow('(.claude/rules)'))}` },
-            { value: 'cursor',  label: `Cursor         ${pc.dim(pc.cyan('(.cursor/rules)'))}` },
-            { value: 'gemini',  label: `Gemini         ${pc.dim(pc.magenta('(.agents)'))}` },
-            { value: 'copilot', label: `GitHub Copilot ${pc.dim(pc.green('(.github/instructions)'))}` },
-            { value: 'windsurf',label: `Windsurf       ${pc.dim(pc.blue('(.windsurf/rules)'))}` },
-          ],
+          options: AGENT_OPTIONS,
           initialValues: agents.length > 0 ? agents : ['cursor', 'gemini'],
           required: false
         });
@@ -117,13 +143,20 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
 
     if (currentAction === 'agentsmd') {
       const agentsMdSelection: any = await select({
-        message: 'We detected an AGENTS.md file. Can we append a tiny pointer block to it? (Helps Codex & Zed discover rules)',
+        message: hasAgentsMd
+          ? 'Add a rule index to your AGENTS.md? (Helps Codex, Zed and others discover rules)'
+          : 'Write a rule index to AGENTS.md? (Helps Codex, Zed and others discover rules)',
         options: [
-          { value: 'yes', label: 'Yes, append a 4-line pointer block at the bottom' },
-          { value: 'no', label: 'No, do not touch AGENTS.md' },
+          {
+            value: 'yes',
+            label: hasAgentsMd
+              ? 'Yes — only the block between our markers is ever rewritten'
+              : 'Yes, create AGENTS.md with an index of the rules'
+          },
+          { value: 'no', label: 'No, leave AGENTS.md alone' },
           { value: 'go_back', label: '⬅️  Go Back' }
         ],
-        initialValue: updateAgentsMd ? 'yes' : 'no'
+        initialValue: addAgentsMd ? 'yes' : 'no'
       });
 
       if (isCancel(agentsMdSelection)) return null;
@@ -131,7 +164,7 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
         step--;
         continue;
       }
-      updateAgentsMd = agentsMdSelection === 'yes';
+      addAgentsMd = agentsMdSelection === 'yes';
       step++;
     }
   }
@@ -140,6 +173,6 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
     agents,
     addToGitignore,
     addPostinstall,
-    updateAgentsMd
+    addAgentsMd
   };
 }

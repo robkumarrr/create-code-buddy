@@ -1,5 +1,6 @@
 ---
-status: "to-do"
+description: Expose Code Buddy operations as an MCP server
+status: "planned"
 priority: "medium"
 type: "feature"
 ---

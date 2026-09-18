@@ -19,7 +19,7 @@ export const BASELINE_RULES: Record<string, { description: string, globs: string
     globs: '".codebuddy/**"',
     content: `# Create-Code-Buddy: AI Instructions
 
-Manage rules exclusively via the \`.codebuddy/\` SSOT folder. DO NOT edit these compiled directories directly:
+Manage rules and specs via the \`.codebuddy/\` folder. DO NOT edit these compiled directories directly:
 - \`.claude/rules/\`
 - \`.clinerules/\`
 - \`.cursor/rules/\`
@@ -27,8 +27,17 @@ Manage rules exclusively via the \`.codebuddy/\` SSOT folder. DO NOT edit these 
 - \`.github/instructions/\`
 - \`.windsurf/rules/\`
 
-- **Create**: Run \`npx ccb add --name "folder/rule" --globs "*.ts" --description "..."\`
-- **Edit/Delete**: Modify or delete the \`.codebuddy/*.md\` files natively.
+## Where things live
+
+- \`.codebuddy/rules/*.md\` — coding rules. These ARE compiled into every agent folder above.
+- \`.codebuddy/specs/*.md\` — feature specs. These are NOT compiled. They are listed in
+  AGENTS.md with their status; open the one covering what you are working on.
+
+- **Create a rule**: Run \`npx ccb add --name "folder/rule" --globs "*.ts" --description "..."\`
+- **Create a spec**: No command for this yet — write \`.codebuddy/specs/<name>.md\` by hand
+  with \`description:\` and \`status:\` frontmatter, then sync. \`status:\` is one of
+  \`planned\`, \`in progress\`, \`parked\`, \`done\`.
+- **Edit/Delete**: Modify or delete the \`.codebuddy/rules/*.md\` files natively.
 - **Sync**: ALWAYS run \`npx ccb sync\` after manual edits to compile changes globally.
 
 ## Agent Identity → --agents flag

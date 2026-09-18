@@ -21,10 +21,10 @@ ideas.txt
 coverage/
 
 # --- Create Code Buddy (Start) ---
-.cursor/
+.cursor/rules/
 .clinerules/
-.agents/
-.claude/
+.agents/rules/
+.claude/rules/
 .github/instructions/
-.windsurf/
+.windsurf/rules/
 # --- Create Code Buddy (End) ---

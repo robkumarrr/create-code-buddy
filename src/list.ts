@@ -3,37 +3,25 @@ import path from 'path';
 import pc from 'picocolors';
 import { intro, outro, select, isCancel } from '@clack/prompts';
 import { exec } from 'child_process';
-
-
-function getMarkdownFiles(dir: string): string[] {
-  let results: string[] = [];
-  const list = fs.readdirSync(dir, { withFileTypes: true });
-  for (const item of list) {
-    const fullPath = path.join(dir, item.name);
-    if (item.isDirectory()) {
-      results = results.concat(getMarkdownFiles(fullPath));
-    } else if (item.name.endsWith('.md') || item.name.endsWith('.mdc')) {
-      results.push(fullPath);
-    }
-  }
-  return results;
-}
+import { SSOT_DIR, TOOL_NAME, rulesRoot } from './core/constants';
+import { getRuleFiles } from './core/fs';
 
 export async function listRules(projectRoot: string = process.cwd()) {
   console.clear();
-  intro(pc.bgCyan(pc.black(` create-code-buddy: Navigating Rules `)));
+  intro(pc.bgCyan(pc.black(` ${TOOL_NAME}: Navigating Rules `)));
 
-  const codebuddyDir = path.join(projectRoot, '.codebuddy');
+  const codebuddyDir = path.join(projectRoot, SSOT_DIR);
 
   if (!fs.existsSync(codebuddyDir)) {
-    outro(pc.red(`No .codebuddy folder found. Please run 'npx create-code-buddy init' first.`));
+    outro(pc.red(`No ${SSOT_DIR} folder found. Please run 'npx ${TOOL_NAME} init' first.`));
+    process.exitCode = 1;
     return;
   }
 
-  const files = getMarkdownFiles(codebuddyDir);
+  const files = getRuleFiles(rulesRoot(projectRoot)).map((f) => f.abs);
 
   if (files.length === 0) {
-    outro(pc.yellow(`No markdown rules found in .codebuddy.`));
+    outro(pc.yellow(`No markdown rules found in ${SSOT_DIR}.`));
     return;
   }
 

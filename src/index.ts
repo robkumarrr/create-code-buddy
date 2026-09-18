@@ -9,31 +9,38 @@ import { addEntry } from './add';
 import { listRules } from './list';
 import { syncAgents, getConfig } from './sync';
 import { cleanAgents } from './clean';
+import { migrate } from './migrate';
+import { ADAPTER_IDS } from './adapters';
+import { fail } from './core/report';
+import { TOOL_NAME, TOOL_VERSION, SSOT_DIR, CONFIG_FILE } from './core/constants';
 
 async function main() {
   program
-    .name('create-code-buddy')
+    .name(TOOL_NAME)
     .description('A CLI tool to compile and manage agentic context and rules.')
-    .version('1.0.0')
+    .version(TOOL_VERSION)
     .addHelpText('after', `
 Examples:
-  $ npx create-code-buddy init         # Interactive setup wizard
-  $ npx create-code-buddy edit         # Edit existing agent config
-  $ npx create-code-buddy add          # Interactively add a rule
-  $ npx create-code-buddy sync         # Manually compile rules
-  $ npx create-code-buddy clean        # Delete compiled folders
-  $ npx create-code-buddy list         # View and navigate rules
+  $ npx ${TOOL_NAME} init         # Interactive setup wizard
+  $ npx ${TOOL_NAME} edit         # Edit existing agent config
+  $ npx ${TOOL_NAME} add          # Interactively add a rule
+  $ npx ${TOOL_NAME} sync         # Manually compile rules
+  $ npx ${TOOL_NAME} clean        # Delete compiled folders
+  $ npx ${TOOL_NAME} list         # View and navigate rules
+  $ npx ${TOOL_NAME} migrate      # Move an older layout into .codebuddy/rules/
 `);
 
   program
     .command('init', { isDefault: true })
     .alias('edit')
     .alias('config')
-    .description('Scaffold or edit your .codebuddy/ SSOT and configure AI Agents')
+    .description(`Scaffold or edit your ${SSOT_DIR}/ SSOT and configure AI Agents`)
     .option('-y, --yes', 'Skip prompts and use default configuration')
     .option('-a, --agents <agents>', 'Comma-separated list of agents to configure (cursor,gemini,copilot,generic)')
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
-    .option('--agents-md', 'Append a pointer block to AGENTS.md (for Codex/Zed discovery)')
+    .option('--no-agents-md', 'Do not write a rule index into AGENTS.md')
+    .option('--postinstall', 'Add a postinstall script to package.json (compiles rules automatically for teammates)')
+    .option('--no-postinstall', 'Do not add a postinstall script (default under --yes)')
     .action(async (cliOptions) => {
       console.clear();
       
@@ -43,15 +50,15 @@ Examples:
                        /  
 `;
       console.log(pc.cyan(asciiLogo));
-      intro(pc.bgCyan(pc.black(' create-code-buddy ')));
+      intro(pc.bgCyan(pc.black(` ${TOOL_NAME} `)));
 
       const existingConfig = getConfig(process.cwd());
       if (existingConfig) {
-        console.log(pc.dim('Found existing .codebuddy/config.json. Loading your settings...\n'));
+        console.log(pc.dim(`Found existing ${SSOT_DIR}/${CONFIG_FILE}. Loading your settings...\n`));
       } else {
-        console.log(pc.cyan('Welcome to create-code-buddy! 🤖\n'));
+        console.log(pc.cyan(`Welcome to ${TOOL_NAME}! 🤖\n`));
         console.log(pc.white('Instead of manually editing your AI agent\'s rules folder (.cursorrules, .agents, etc),'));
-        console.log(pc.white('you will now write your rules once in a centralized ') + pc.bold(pc.cyan('.codebuddy/')) + pc.white(' folder.'));
+        console.log(pc.white('you will now write your rules once in a centralized ') + pc.bold(pc.cyan(`${SSOT_DIR}/`)) + pc.white(' folder.'));
         console.log(pc.white('This wizard configures which agent folders we should auto-compile those rules into.\n'));
         console.log(pc.dim('(We\'ve pre-selected some defaults for you below, feel free to make your own selections)\n'));
       }
@@ -59,6 +66,15 @@ Examples:
       let parsedAgents;
       if (cliOptions.agents) {
         parsedAgents = cliOptions.agents.split(',').map((a: string) => a.trim());
+
+        const unknownIds = parsedAgents.filter((id: string) => !ADAPTER_IDS.includes(id));
+        if (unknownIds.length > 0) {
+          fail(
+            `Unknown agent id${unknownIds.length > 1 ? 's' : ''}: ${unknownIds.join(', ')}. ` +
+              `Valid agents are: ${ADAPTER_IDS.join(', ')}.`,
+          );
+          return;
+        }
       } else if (existingConfig) {
         parsedAgents = existingConfig.agents;
       }
@@ -67,7 +83,8 @@ Examples:
         yes: cliOptions.yes,
         agents: parsedAgents,
         addToGitignore: cliOptions.gitignore === false ? false : (existingConfig ? existingConfig.gitignore_compiled_agents : undefined),
-        updateAgentsMd: cliOptions.agentsMd || (existingConfig ? existingConfig.update_agents_md : undefined)
+        addPostinstall: cliOptions.postinstall,
+        addAgentsMd: cliOptions.agentsMd
       });
 
       if (!answers) {
@@ -89,9 +106,22 @@ Examples:
   program
     .command('clean')
     .description('Remove compiled agent folders and clean up .gitignore')
-    .option('--hard', 'Factory reset: Also delete your .codebuddy/ source files (Irreversible!)')
+    .option('--hard', `Factory reset: Also delete your ${SSOT_DIR}/ source files (Irreversible!)`)
+    .option('--force', 'Skip the --hard confirmation prompts (required in a non-interactive shell)')
     .action(async (cliOptions) => {
-      await cleanAgents(process.cwd(), cliOptions.hard);
+      // clean --hard's confirmations read from stdin, which a non-interactive
+      // shell (a git hook, a CI step) either closes or never sends anything
+      // on -- without this check that would hang rather than fail. --force
+      // exists to skip both prompts in exactly that case; require it
+      // explicitly rather than silently proceeding unconfirmed.
+      if (cliOptions.hard && !process.stdin.isTTY && !cliOptions.force) {
+        fail(
+          'clean --hard needs interactive confirmation and stdin is not a TTY. ' +
+            'Re-run with --force to skip the prompts in a non-interactive shell.',
+        );
+        return;
+      }
+      await cleanAgents(process.cwd(), cliOptions.hard, cliOptions.force);
     });
 
   program
@@ -105,6 +135,14 @@ Examples:
     });
 
   program
+    .command('migrate')
+    .description(`Move rules from an older flat ${SSOT_DIR}/ layout into ${SSOT_DIR}/rules/`)
+    .option('--apply', 'Actually move the files (without this, only shows what would change)')
+    .action(async (cliOptions) => {
+      await migrate(process.cwd(), cliOptions.apply);
+    });
+
+  program
     .command('list')
     .description('Navigate and open your SSOT rules')
     .action(async () => {
@@ -114,4 +152,7 @@ Examples:
   program.parse(process.argv);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
