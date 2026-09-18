@@ -161,6 +161,37 @@ function readSsotDir(dir: string): Rule[] {
 }
 
 /**
+ * Says something when rules are still sitting loose at the top of the SSOT,
+ * from before `rules/` existed.
+ *
+ * The wipe guard below catches this only when compiled output is already on
+ * disk. It usually isn't: the agent folders are gitignored by default, so a
+ * fresh clone of an un-migrated project has rules it cannot see and nothing
+ * to compile, and every adapter cheerfully reports zero. This is the case
+ * that guard structurally cannot reach.
+ */
+function warnAboutLooseRules(projectRoot: string): void {
+  const ssotDir = path.join(projectRoot, SSOT_DIR);
+  if (!fs.existsSync(ssotDir)) return;
+
+  const loose = fs
+    .readdirSync(ssotDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .map((entry) => entry.name);
+
+  if (loose.length === 0) return;
+
+  const count = `${loose.length} file${loose.length === 1 ? '' : 's'}`;
+  console.log(
+    pc.yellow(
+      `⚠ Found ${count} directly in ${SSOT_DIR}/ — rules belong in ${SSOT_DIR}/${RULES_SUBDIR}/.\n` +
+        `  ${loose.join(', ')}\n` +
+        `  These are not being compiled. Run \`npx ${TOOL_NAME} migrate\` to move them.`,
+    ),
+  );
+}
+
+/**
  * Says something when the SSOT holds a directory this tool doesn't recognize.
  *
  * A folder name is a promise about where its contents compile to, and only
@@ -193,6 +224,7 @@ export async function syncAgents(projectRoot: string) {
   const rules = readSsotDir(rulesRoot(projectRoot));
   const specs = readSsotDir(specsRoot(projectRoot));
   warnAboutUnknownSubdirs(projectRoot);
+  warnAboutLooseRules(projectRoot);
 
   if (rules.length === 0 && hasGeneratedOutput(projectRoot)) {
     // Distinguish the two ways to land here, because the fix differs: an older
@@ -250,13 +282,18 @@ export async function syncAgents(projectRoot: string) {
 
     // Say what actually happened, including deletions. A bare tick used to
     // print even when the run had removed every file it found.
-    const wrote = `${rules.length} rule${rules.length === 1 ? '' : 's'}`;
     const alsoRemoved = removed > 0 ? pc.dim(` (removed ${removed} stale)`) : '';
-    console.log(
-      pc.green(`✔ Compiled ${wrote} → ${adapter.label}`) +
-        pc.dim(` (${adapter.rulesDir})`) +
-        alsoRemoved,
-    );
+    const target = pc.dim(` (${adapter.rulesDir})`);
+
+    if (rules.length === 0) {
+      // A green tick on a run that wrote nothing claims a success that did not
+      // happen. Whatever emptied the source folder, saying so plainly is the
+      // point -- the tick is for runs that actually compiled something.
+      console.log(pc.yellow(`- No rules to compile → ${adapter.label}`) + target + alsoRemoved);
+    } else {
+      const wrote = `${rules.length} rule${rules.length === 1 ? '' : 's'}`;
+      console.log(pc.green(`✔ Compiled ${wrote} → ${adapter.label}`) + target + alsoRemoved);
+    }
   }
 
   // Reassemble the ignore list in config.agents's own order rather than the

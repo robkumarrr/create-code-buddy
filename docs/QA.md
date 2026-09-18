@@ -256,9 +256,18 @@ printf -- '---\ndescription: Testing\nglobs: ["*.test.ts"]\n---\n\n# Testing\n' 
 ccb sync ; echo "exit=$?"
 ```
 
-**Known issue ([#39](https://github.com/robkumarrr/create-code-buddy/issues/39)):** prints
-`✔ Compiled 0 rules` and exits 0, with no hint that `migrate` is needed. Until it's
-fixed, expect this. Once fixed, expect a warning pointing at `migrate`.
+Expect a yellow warning naming both files and telling you to run `migrate`, then
+`- No rules to compile → Cursor` — **not** a green tick, because nothing was compiled.
+Then confirm the way out actually works:
+
+```bash
+ccb migrate --apply && ccb sync
+```
+
+Now `✔ Compiled 2 rules → Cursor`. This was
+[#39](https://github.com/robkumarrr/create-code-buddy/issues/39): the wipe guard only
+fires when compiled output already exists, and with agent folders gitignored it usually
+doesn't — so a fresh clone had rules it couldn't see and reported success.
 
 [↑ Back to top](#table-of-contents)
 
@@ -325,7 +334,11 @@ No flags. Check each output form appears:
 
 - `✔ Compiled 5 rules → Cursor (.cursor/rules)` — one per agent, correct label and dir.
 - `✔ Compiled 1 rule → …` — **singular** at exactly one.
+- `- No rules to compile → Cursor (.cursor/rules)` — yellow, **no green tick**, when
+  there was nothing to write. Try it with an empty `.codebuddy/rules/`.
 - `(removed N stale)` — dim, only when something was deleted.
+- Yellow `⚠ Found 2 files directly in .codebuddy/ …` naming them and pointing at
+  `migrate` — see [Journey F](#f-a-teammate-clones-the-repo).
 - `✔ Indexed rules in AGENTS.md` — only when enabled.
 - Yellow `⚠ Ignoring .codebuddy/prompts/ — not a recognized folder.` — try
   `mkdir .codebuddy/prompts && touch .codebuddy/prompts/x.md`.
@@ -522,6 +535,8 @@ Exact text, for when you're unsure whether something is a wording change or a bu
 | Bad agent id | `Unknown agent id: X.` / `Unknown agent ids: X, Y.` then `Valid agents are: cline, claude, cursor, gemini, copilot, windsurf.` |
 | No agents chosen | `⚠  Select at least one agent to continue, or press Ctrl+C to exit at any time.` |
 | Sync, per agent | `✔ Compiled N rules → <Label> (<dir>)` |
+| Sync, nothing to write | `- No rules to compile → <Label> (<dir>)` (yellow, no tick) |
+| Sync, rules left at SSOT root | `⚠ Found N files directly in .codebuddy/ — rules belong in .codebuddy/rules/.` then the filenames, then `Run \`npx create-code-buddy migrate\` to move them.` |
 | Sync, deletions | `(removed N stale)` |
 | Sync, index | `✔ Indexed rules in AGENTS.md` |
 | Unknown SSOT folder | `⚠ Ignoring .codebuddy/X/ — not a recognized folder. Rules belong in .codebuddy/rules/.` |
