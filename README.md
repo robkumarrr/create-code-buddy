@@ -87,12 +87,18 @@ every rule riding along in context on every turn. Only the block between the
 `create-code-buddy` markers is ever rewritten — anything you wrote around it is left
 alone. Opt out with `--no-agents-md`.
 
-> **Using Claude Code?** It reads `CLAUDE.md`, not `AGENTS.md`. Either select the
-> `claude` agent above (better — you get real path-scoped rules), or add a one-line
-> import at the top of your `CLAUDE.md`:
+> **Using Claude Code?** It reads `CLAUDE.md`, not `AGENTS.md`. Do both:
+>
+> 1. Select the `claude` agent above, so your rules compile to `.claude/rules/` and load
+>    with real path scoping.
+> 2. Add this line to `CLAUDE.md`:
 > ```markdown
 > @AGENTS.md
 > ```
+>
+> Step 2 isn't optional if you use specs. Rules compile into `.claude/rules/`, but the
+> **spec index lives only in `AGENTS.md`** — without the import, Claude Code is told to
+> open the spec covering its task while having no way to see the list.
 
 > **Windsurf → Devin Desktop:** Windsurf's docs now redirect to Devin Desktop's. We
 > target `.windsurf/rules/`, which is documented as a supported backward-compatible
