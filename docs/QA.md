@@ -517,6 +517,9 @@ npm pack --dry-run
 ```
 
 - Tarball contains `dist/` only. `src/`, tests and config must **not** ship.
+- `dist/` is gitignored, so it exists only if you built. `prepublishOnly` runs the build
+  for you, but **check `dist/index.js` is actually in the `npm pack` output** — this is
+  the one mistake that silently publishes an empty package.
 - Install it somewhere real and drive the actual bin:
 
 ```bash

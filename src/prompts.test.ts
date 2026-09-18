@@ -9,9 +9,21 @@ vi.mock('@clack/prompts', () => ({
   cancel: vi.fn(),
 }));
 
+/**
+ * The mocked `isCancel` above recognizes this exact symbol, so it is the right
+ * value for a cancelled prompt here.
+ *
+ * The cast is unavoidable: clack types cancellation as its own `unique symbol`,
+ * which by definition only that module can produce. A test cannot construct one,
+ * so it asserts at this single boundary rather than at every call site.
+ */
+const CANCEL = Symbol.for('cancel') as unknown as Awaited<
+  ReturnType<typeof clackPrompts.multiselect>
+>;
+
 describe('prompts', () => {
   it('should return null if user cancels the multiselect prompt', async () => {
-    vi.mocked(clackPrompts.multiselect).mockResolvedValueOnce(Symbol.for('cancel'));
+    vi.mocked(clackPrompts.multiselect).mockResolvedValueOnce(CANCEL);
 
     const result = await runPrompts();
     expect(result).toBeNull();
