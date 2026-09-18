@@ -11,16 +11,33 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
   const rulesDir = rulesRoot(projectRoot);
   fs.mkdirSync(rulesDir, { recursive: true });
 
-  // 0. Optionally add postinstall script
+  // 0. Optionally add postinstall script.
+  //
+  // This is the only thing the tool writes outside its own folders, and the
+  // most consequential thing it does: it makes a command run on every
+  // `npm install`, for everyone who clones the repo. It used to happen in
+  // silence, so an agent could do it on someone's behalf and leave no trace
+  // in the output they actually read. Consent was fixed in task 3.7 --
+  // `--yes` alone no longer opts in -- and this is the disclosure half.
   if (answers.addPostinstall) {
     const pkgPath = path.join(projectRoot, 'package.json');
-    if (fs.existsSync(pkgPath)) {
+    if (!fs.existsSync(pkgPath)) {
+      // Saying nothing here leaves someone believing they got a hook.
+      console.log(
+        pc.yellow(`⚠ No package.json found, so no postinstall script was added.`),
+      );
+    } else {
       try {
         const pkgContent = fs.readFileSync(pkgPath, 'utf8');
         const pkg = JSON.parse(pkgContent);
         if (!pkg.scripts) pkg.scripts = {};
         pkg.scripts.postinstall = POSTINSTALL_SCRIPT;
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+        console.log(
+          pc.yellow(`⚠ Modified package.json — added a postinstall script.`) +
+            pc.dim(`\n  \`${POSTINSTALL_SCRIPT}\` will now run on every npm install, for anyone who clones this repo.`) +
+            pc.dim(`\n  To undo, delete scripts.postinstall from package.json.`),
+        );
       } catch (err) {
         console.log(pc.yellow(`Warning: Could not inject postinstall script because package.json is malformed.`));
       }

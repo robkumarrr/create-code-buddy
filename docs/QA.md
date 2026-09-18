@@ -152,7 +152,8 @@ Flag combinations to try, each in a fresh dir:
 |---|---|
 | `init --yes --agents cursor --no-gitignore` | No `# --- Create Code Buddy` block in `.gitignore` |
 | `init --yes --agents cursor --no-agents-md` | No `AGENTS.md` written |
-| `init --yes --agents cursor --postinstall` | `"postinstall": "npx create-code-buddy sync"` present |
+| `init --yes --agents cursor --postinstall` | `"postinstall": "npx create-code-buddy sync"` present, **and** a yellow `⚠ Modified package.json` block in the output |
+| `init --yes --agents cursor --postinstall` in a dir with no `package.json` | Yellow `⚠ No package.json found, so no postinstall script was added.` — not silence |
 | `init --yes --agents nope` | Red `Unknown agent id: nope. Valid agents are: …`, exit 1, **no files created** |
 
 **[manual]** `--no-agents-md` **interactively** must not ask about AGENTS.md at all — a
@@ -327,6 +328,15 @@ Every command and flag, so nothing goes unexercised in a full pass.
 **[manual]** Re-running `init` in a configured project should print dim
 *"Found existing .codebuddy/config.json. Loading your settings…"* and preselect your
 agents.
+
+**[auto] `package.json` edits are always announced.** It's the only thing the tool
+writes outside its own folders, and it makes a command run on every `npm install` for
+everyone who clones the repo. Check both directions:
+
+- Adding it (flag **or** the wizard's "Yes") prints a yellow `⚠ Modified package.json`
+  block naming the script and how to undo it.
+- **Not** passing `--postinstall` prints nothing about `package.json` at all. If it
+  mentions it without touching it, that's a bug in the other direction.
 
 ### sync
 
@@ -535,6 +545,8 @@ Exact text, for when you're unsure whether something is a wording change or a bu
 | Bad agent id | `Unknown agent id: X.` / `Unknown agent ids: X, Y.` then `Valid agents are: cline, claude, cursor, gemini, copilot, windsurf.` |
 | No agents chosen | `⚠  Select at least one agent to continue, or press Ctrl+C to exit at any time.` |
 | Sync, per agent | `✔ Compiled N rules → <Label> (<dir>)` |
+| package.json modified | `⚠ Modified package.json — added a postinstall script.` plus what it does and how to undo |
+| `--postinstall`, no package.json | `⚠ No package.json found, so no postinstall script was added.` |
 | Sync, nothing to write | `- No rules to compile → <Label> (<dir>)` (yellow, no tick) |
 | Sync, rules left at SSOT root | `⚠ Found N files directly in .codebuddy/ — rules belong in .codebuddy/rules/.` then the filenames, then `Run \`npx create-code-buddy migrate\` to move them.` |
 | Sync, deletions | `(removed N stale)` |
