@@ -33,7 +33,7 @@ export interface Rule {
    */
   hasFrontmatter: boolean;
   /**
-   * Lifecycle of a spec — `planned`, `in progress`, `parked`, `done`, or
+   * Lifecycle of a spec — `backlog`, `in-progress`, `in-review`, `done`, or
    * anything else the author writes. Shown beside the spec in the AGENTS.md
    * index so an agent can tell live work from shelved work. Empty for rules,
    * which have no lifecycle.

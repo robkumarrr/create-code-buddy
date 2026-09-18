@@ -52,11 +52,12 @@ with `description:` and `status:` frontmatter, then run `sync`:
 ```markdown
 ---
 description: Expose Code Buddy operations as an MCP server
-status: planned
+status: backlog
 ---
 ```
 
-`status:` is one of `planned`, `in progress`, `parked` or `done`. Anything else still
+`status:` is one of `backlog`, `in-progress`, `in-review` or `done` — the columns most
+ticket boards use. Anything else still
 renders, so nothing breaks if you go off-script, but sticking to these keeps the index
 readable when several specs are live at once.
 

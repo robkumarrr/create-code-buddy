@@ -117,8 +117,9 @@ you are working on — each is listed below with the files it applies to.
 Feature specs live in `.codebuddy/specs/`. They are not loaded automatically —
 open the one covering what you're working on.
 
-- `.codebuddy/specs/adopt-existing-rules.md` — Technical specification for importing and adopting existing agent rules into Hivemind — planned
-- `.codebuddy/specs/mcp-integration.md` — Expose Code Buddy operations as an MCP server — planned
-- `.codebuddy/specs/v1-migration.md` — Technical specification for the Official V1 Hivemind Rebrand and Migration system — parked
+- `.codebuddy/specs/adopt-existing-rules.md` — Import rules a project already has into the .codebuddy SSOT — backlog
+- `.codebuddy/specs/branch-aware-specs.md` — Surface the spec that matches the branch you are actually on — backlog
+- `.codebuddy/specs/mcp-integration.md` — Expose Code Buddy's commands as typed MCP tools — backlog
+- `.codebuddy/specs/spec-dependencies.md` — Whether and how specs should express what blocks them — backlog
 
 <!-- create-code-buddy:end -->
