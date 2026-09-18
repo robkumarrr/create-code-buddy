@@ -28,6 +28,13 @@ jobs:
       
     - name: Build
       run: npm run build
-      
+
+    # `build` compiles with tsconfig.build.json, which excludes tests, so a type
+    # error in a test file is invisible to it. This runs tsc over the whole
+    # project -- the gate CONTRIBUTING.md and the rule files have always told
+    # contributors to run, which CI did not.
+    - name: Typecheck
+      run: npm run typecheck
+
     - name: Test
       run: npm run test:coverage
