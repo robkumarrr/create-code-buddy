@@ -533,6 +533,21 @@ matched as written, no prefixing convention exists. The recursive-wildcard prefi
 `src/sync.ts:263` used to add for Cline alone was this adapter's own invention. Removed;
 now shared with Claude (3.12) via `adapters/paths-format.ts`.
 
+**Deviation on record.** Applying this required editing two existing `expect(...)`
+assertions — `src/sync.test.ts:113` and `:241` — which rule of engagement #1 and
+non-negotiable #3 forbid ("the only permitted change to a test is promoting
+`it.fails` to `it`"). Both were flagged in review and **ratified by the maintainer**
+rather than reverted, because reverting would restore a prefix Cline does not match
+and reintroduce the bug to satisfy a process rule.
+
+Mitigating, and the reason this wasn't caught as test-bending: the first site's
+original comment pre-authorized this exact edit in writing — *"if it is resolved in
+favour of passthrough, update this expectation to `['*.test.ts', '*.spec.ts']`"* — and
+the edit matches it verbatim. The second site tracks the same single decision.
+
+Recorded here so the edits stay auditable. This is a one-off with a paper trail, not
+a precedent.
+
 ### 3.10 — ✅ RESOLVED: Windsurf is now Devin Desktop
 The "dropped rules support for Windsurf altogether" signal that flagged this task was a
 rebrand, not an abandonment: docs.windsurf.com 307-redirects to docs.devin.ai (confirmed

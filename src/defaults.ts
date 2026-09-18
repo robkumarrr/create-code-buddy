@@ -34,6 +34,9 @@ Manage rules and specs via the \`.codebuddy/\` folder. DO NOT edit these compile
   AGENTS.md with their status; open the one covering what you are working on.
 
 - **Create a rule**: Run \`npx ccb add --name "folder/rule" --globs "*.ts" --description "..."\`
+- **Create a spec**: No command for this yet — write \`.codebuddy/specs/<name>.md\` by hand
+  with \`description:\` and \`status:\` frontmatter, then sync. \`status:\` is one of
+  \`planned\`, \`in progress\`, \`parked\`, \`done\`.
 - **Edit/Delete**: Modify or delete the \`.codebuddy/rules/*.md\` files natively.
 - **Sync**: ALWAYS run \`npx ccb sync\` after manual edits to compile changes globally.
 

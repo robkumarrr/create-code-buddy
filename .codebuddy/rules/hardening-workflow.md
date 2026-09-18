@@ -1,40 +1,65 @@
 ---
-description: Working agreement for the V1 hardening effort
+description: Working agreement carried over from the V1 hardening effort
 globs: ["*.*"]
 ---
 
-# V1 Hardening: Working Agreement
+# Working Agreement
 
-An active hardening effort governs changes to this repo. The full plan lives at
-`docs/V1-HARDENING-PLAN.md` — **read it before changing anything under `src/`.**
+The V1 hardening effort is **complete** — Phases 1 through 6 shipped in one PR. The
+record lives at `docs/V1-HARDENING-PLAN.md`; read it before changing anything under
+`src/`, because most of what's there explains why the code is shaped the way it is.
+
+The rules below outlived that effort and still bind.
 
 ## Non-negotiables
 
-1. **The test suite is the specification.** Every planned fix already has a test
-   describing it. Write no new behavior that isn't pinned by one.
-2. **Never run `vitest -u` during the Phase 2 refactor.** `src/golden.test.ts`
-   snapshots the exact compiled output of every adapter. Phase 2 claims "identical
-   bytes out, different code in" — a failing snapshot means the refactor changed
-   behavior. That is a bug to find, never a snapshot to update. From Phase 3 on,
-   update it in the same commit as the fix it belongs to.
-3. **Never edit a test's expectation to make it pass.** The only permitted change
-   to a test is promoting `it.fails` to `it` once the underlying bug is fixed.
-   Editing an `expect(...)` means the spec is being bent to fit the code.
-4. **Stop at the checkpoints.** The plan marks them ⛔. Hand back rather than
-   pressing on.
-5. **Never change the watermark string** in `src/core/constants.ts`. Files already
-   generated in the wild carry it; changing it orphans every one of them.
+1. **The test suite is the specification.** Write no new behavior that isn't pinned
+   by a test.
+2. **A failing golden snapshot is a bug to find, not a snapshot to update.**
+   `src/golden.test.ts` holds the exact compiled output of every adapter. When it
+   moves, something changed for users — understand what before accepting it, and
+   update it in the same commit as the fix it belongs to. Never `vitest -u` to make
+   a red suite green.
+3. **Never edit a test's expectation to make it pass.** Promoting `it.fails` to `it`
+   is the permitted change. Editing an `expect(...)` bends the spec to fit the code.
+   *One ratified exception:* `src/sync.test.ts:113` and `:241` were edited when Task
+   3.9 resolved in favour of glob passthrough — the first site's own comment
+   pre-authorized that exact edit in writing, and the maintainer ratified both. A
+   deviation on this rule needs a record like this one; it is not a precedent.
+4. **Never change the watermark string** in `src/core/constants.ts`. Files already
+   generated in the wild carry it; changing it orphans every one of them. The same
+   reasoning covers the AGENTS.md block markers and config keys: old forms stay
+   readable, even when they stop being written.
+5. **Keep the rule files honest.** Everything in `.codebuddy/rules/` compiles into
+   six agent folders and is loaded into agents' context. A rule that describes code
+   which no longer exists actively misleads — this file and `codebuddy-system.md`
+   both went stale during the restructure and had to be repaired before merge.
 
-## Rules that are the maintainer's call, not yours
+## Decisions that are the maintainer's, not yours
 
-The plan flags these explicitly. Raise them, do not guess:
+Raise them, do not guess. Resolved so far:
 
-- Whether to prefix globs with `**/` (task 3.9)
-- Windsurf's current frontmatter format (task 3.10)
-- Whether `postinstall` should become `prepare` (task 3.7)
+- **Glob prefixing (3.9)** — ✅ passthrough. Cline's docs (2026-09-17) say `paths`
+  are matched as written; the prefix was this adapter's own invention.
+- **Windsurf frontmatter (3.10)** — ✅ `trigger: always_on | glob`. docs.windsurf.com
+  redirects to docs.devin.ai; `.windsurf/rules/` is the documented fallback.
+  **Still open:** whether to also target `.devin/rules/`, or rename the adapter id.
+- **`postinstall` vs `prepare` (3.7)** — still open, deliberately. The `--yes`
+  consent bug was fixed without touching it.
 
 ## Before committing
 
 ```bash
 npm test && npm run typecheck && npm run build
 ```
+
+## On phasing
+
+The plan called for one phase per branch. In practice Phases 1-6 shipped as a single
+PR, because the phases interlock: Phase 1's test harness is what made Phase 2's
+refactor safe, and Phase 2's adapter registry is what made Phase 6 a path change
+rather than six parallel edits. Reviewing any later phase against a `main` without
+the earlier ones would mean reviewing it against code that didn't exist.
+
+That was a deliberate, recorded trade against reviewability. Prefer smaller PRs now
+that the foundation is in.

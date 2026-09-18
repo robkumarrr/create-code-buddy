@@ -46,6 +46,20 @@ files." They're small and they're compiled everywhere.
 `status:` in `AGENTS.md` so an agent can open the one that matters, rather than
 carrying every spec you've ever written in context on every turn.
 
+Write a spec by hand as `.codebuddy/specs/<name>.md` — there's no command for it yet —
+with `description:` and `status:` frontmatter, then run `sync`:
+
+```markdown
+---
+description: Expose Code Buddy operations as an MCP server
+status: planned
+---
+```
+
+`status:` is one of `planned`, `in progress`, `parked` or `done`. Anything else still
+renders, so nothing breaks if you go off-script, but sticking to these keeps the index
+readable when several specs are live at once.
+
 Only `rules/` and `specs/` are recognized. A folder name is a promise about where its
 contents go, and the tool can only keep that promise for the two it knows how to
 place — anything else gets a warning rather than being skipped in silence.

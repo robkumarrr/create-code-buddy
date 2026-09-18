@@ -255,8 +255,10 @@ export function parseRule(relPath: string, raw: string): ParsedRule {
  *
  * Adapters must use this rather than string concatenation. Hand-built
  * frontmatter is what produced `applyTo: "*.ts", "*.js"` — output that no YAML
- * parser will accept. The one deliberate exception is Cursor's bare
- * comma-joined `globs:` line, which is not YAML and is covered by its own test.
+ * parser will accept. The deliberate exceptions are the bare comma-joined
+ * `globs:` lines in `adapters/cursor.ts` and `adapters/windsurf.ts`, and the
+ * legacy attribute lines in `adapters/legacy-format.ts`. None is YAML, and
+ * each is covered by its own test.
  *
  * `singleQuote` matches the quoting style the wider ecosystem emits.
  */
