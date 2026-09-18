@@ -37,6 +37,39 @@ describe('prompts', () => {
     });
   });
 
+  it('does not ask about AGENTS.md when --no-agents-md already answered it', async () => {
+    vi.mocked(clackPrompts.multiselect).mockClear();
+    vi.mocked(clackPrompts.select).mockClear();
+    vi.mocked(clackPrompts.multiselect).mockResolvedValueOnce(['cursor']);
+    vi.mocked(clackPrompts.select)
+      .mockResolvedValueOnce('yes')  // gitignore
+      .mockResolvedValueOnce('no');  // postinstall
+    // Deliberately no third answer: if the AGENTS.md step still ran it would
+    // consume an unmocked select, resolve undefined, and fall through as "no"
+    // -- the same value, reached by asking a question the user already
+    // answered on the command line.
+
+    const result = await runPrompts({ addAgentsMd: false });
+
+    expect(result?.addAgentsMd).toBe(false);
+    expect(vi.mocked(clackPrompts.select)).toHaveBeenCalledTimes(2);
+  });
+
+  it('still asks about AGENTS.md when the flag was not passed', async () => {
+    vi.mocked(clackPrompts.multiselect).mockClear();
+    vi.mocked(clackPrompts.select).mockClear();
+    vi.mocked(clackPrompts.multiselect).mockResolvedValueOnce(['cursor']);
+    vi.mocked(clackPrompts.select)
+      .mockResolvedValueOnce('yes')  // gitignore
+      .mockResolvedValueOnce('no')   // postinstall
+      .mockResolvedValueOnce('yes'); // AGENTS.md
+
+    const result = await runPrompts();
+
+    expect(result?.addAgentsMd).toBe(true);
+    expect(vi.mocked(clackPrompts.select)).toHaveBeenCalledTimes(3);
+  });
+
   it('should bypass prompts if initialArgs.yes is true', async () => {
     vi.mocked(clackPrompts.multiselect).mockClear();
     vi.mocked(clackPrompts.select).mockClear();
