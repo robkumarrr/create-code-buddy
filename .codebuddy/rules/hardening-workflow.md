@@ -53,6 +53,19 @@ Raise them, do not guess. Resolved so far:
 npm test && npm run typecheck && npm run build
 ```
 
+## Before opening a PR
+
+**If behaviour changed, `docs/QA.md` changes in the same PR.** A new flag, a new
+command, different output text, a different file layout — each has a scenario in there
+that is now wrong, and a QA doc that lies is worse than none, because it trains the
+tester to skip mismatches.
+
+Check: does any scenario, expected-output string, or the appendix table still describe
+what the code did before your change? Fix it here, not later.
+
+If the change adds behaviour a test cannot reach — anything interactive, anything about
+rendering, anything only a real install exercises — add a `[manual]` scenario for it.
+
 ## On phasing
 
 The plan called for one phase per branch. In practice Phases 1-6 shipped as a single

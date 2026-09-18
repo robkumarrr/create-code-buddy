@@ -108,6 +108,7 @@ you are working on — each is listed below with the files it applies to.
 
 - `.codebuddy/rules/architecture.md` — High-level architecture and system design guidelines (always applies)
 - `.codebuddy/rules/codebuddy-system.md` — Instructions for AI agents on how to manage their own rules (always applies)
+- `.codebuddy/rules/communication.md` — How to write when working in this repo (always applies)
 - `.codebuddy/rules/hardening-workflow.md` — Working agreement carried over from the V1 hardening effort (always applies)
 - `.codebuddy/rules/conventions.md` — General coding conventions and style guidelines (applies to `*.ts`, `*.js`, `*.tsx`, `*.jsx`, `*.php`, `*.cs`, `*.go`, `*.py`)
 - `.codebuddy/rules/testing.md` — Testing standards, frameworks, and conventions (applies to `*.test.*`, `*.spec.*`, `**/__tests__/**`)
