@@ -35,27 +35,17 @@ export interface AgentAdapter {
   render(rule: Rule): string;
 
   /**
-   * Optional non-rule files, e.g. a native skill manifest. Paths are relative
-   * to project root. Should be watermarked so they are recognized as
-   * generated output.
+   * Directories outside `rulesDir` that this adapter once wrote into,
+   * relative to project root. Everything watermarked in here is collected,
+   * and `clean` offers these alongside the rule directories.
    *
-   * Written additively alongside the normal per-rule output, not as a
-   * replacement for it — see gemini.ts for the one adapter using this today,
-   * and why. Declare `extraDirs` alongside it so the output can be collected
-   * when its source rule goes away.
-   */
-  extraFiles?(rules: Rule[]): { path: string; content: string }[];
-
-  /**
-   * Directories outside `rulesDir` that this adapter also writes into,
-   * relative to project root. Anything watermarked in here that `extraFiles`
-   * no longer produces is an orphan and gets collected, and `clean` offers
-   * these alongside the rule directories.
+   * No adapter writes to one today. It exists so output from an earlier
+   * version stays reachable: the per-rule collector only ever scans
+   * `rulesDir`, so without this a file written outside it is stranded
+   * permanently — reachable by neither `sync` nor `clean`.
    *
-   * Without this, a file written by `extraFiles` outlives the rule it came
-   * from: the garbage collector only ever scans `rulesDir`, so deleting the
-   * source rule stranded the output permanently, reachable by neither `sync`
-   * nor `clean`.
+   * An adapter that starts writing outside its `rulesDir` again must declare
+   * the directory here in the same change, or its output is born orphaned.
    */
   extraDirs?: string[];
 
