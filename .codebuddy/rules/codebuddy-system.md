@@ -16,8 +16,9 @@ Manage rules and specs via the `.codebuddy/` folder. DO NOT edit these compiled 
 ## Where things live
 
 - `.codebuddy/rules/*.md` — coding rules. These ARE compiled into every agent folder above.
-- `.codebuddy/specs/*.md` — feature specs. These are NOT compiled. They are listed in
-  AGENTS.md with their status; open the one covering what you are working on.
+- `.codebuddy/specs/*.md` — feature specs. These are NOT compiled. They are listed with
+  their status in AGENTS.md, and in CLAUDE.md for Claude Code; open the one covering what
+  you are working on.
 
 - **Create a rule**: Run `npx ccb add --name "folder/rule" --globs "*.ts" --description "..."`
 - **Create a spec**: No command for this yet — write `.codebuddy/specs/<name>.md` by hand

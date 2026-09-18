@@ -49,7 +49,8 @@ export async function generateConfig(answers: PromptAnswers, projectRoot: string
   const config = {
     agents: answers.agents,
     gitignore_compiled_agents: answers.addToGitignore,
-    agents_md: answers.addAgentsMd
+    agents_md: answers.addAgentsMd,
+    claude_md: answers.addClaudeMd
   };
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 

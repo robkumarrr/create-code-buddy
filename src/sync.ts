@@ -9,6 +9,8 @@ import {
   GITIGNORE_START,
   GITIGNORE_END,
   AGENTS_MD_FILE,
+  CLAUDE_MD_FILE,
+  CLAUDE_MD_IMPORT,
   RULES_SUBDIR,
   SSOT_SUBDIRS,
   rulesRoot,
@@ -17,7 +19,7 @@ import {
 import { getRuleFiles, writeFileDeep, pruneEmptyDirs } from './core/fs';
 import { parseRule, type Rule } from './core/rule';
 import { fail } from './core/report';
-import { updateAgentsMd } from './core/agents-md';
+import { updateAgentsMd, updateClaudeMd } from './core/agents-md';
 import { planMigration } from './migrate';
 import { ADAPTERS } from './adapters';
 
@@ -31,6 +33,8 @@ export interface CodeBuddyConfig {
    * an existing config keeps the setting its owner chose; never written.
    */
   update_agents_md?: boolean;
+  /** Absent in configs written before CLAUDE.md support; treated as true. */
+  claude_md?: boolean;
 }
 
 export function getConfig(projectRoot: string): CodeBuddyConfig | null {
@@ -316,4 +320,43 @@ export async function syncAgents(projectRoot: string) {
   if (agentsMdEnabled) {
     console.log(pc.green(`✔ Indexed rules in ${AGENTS_MD_FILE}`));
   }
+
+  // Claude Code does not read AGENTS.md, so it gets its own copy of the block.
+  // Written when the claude adapter is active, or when a CLAUDE.md already
+  // exists -- someone can use Claude Code without selecting the adapter, but a
+  // project with no CLAUDE.md and no claude adapter has said nothing to suggest
+  // it wants one.
+  const claudeActive = config.agents.includes('claude');
+  const claudeMdExists = fs.existsSync(path.join(projectRoot, CLAUDE_MD_FILE));
+  const claudeMdEnabled = config.claude_md !== false && (claudeActive || claudeMdExists);
+
+  if (claudeMdEnabled) {
+    warnAboutClaudeMdImport(projectRoot);
+    updateClaudeMd(projectRoot, rules, specs, true, claudeActive);
+    console.log(pc.green(`✔ Indexed ${claudeActive ? 'specs' : 'rules'} in ${CLAUDE_MD_FILE}`));
+  }
+}
+
+/**
+ * Warns when CLAUDE.md still carries the `@AGENTS.md` import this tool used to
+ * document.
+ *
+ * Claude Code inlines an import's entire contents, so with a block in CLAUDE.md
+ * the import now loads all of AGENTS.md on top of it -- our own index twice,
+ * plus everything any other tool put there. Laravel Boost writes the same large
+ * block into both files, which is exactly where this bites.
+ */
+function warnAboutClaudeMdImport(projectRoot: string): void {
+  const target = path.join(projectRoot, CLAUDE_MD_FILE);
+  if (!fs.existsSync(target)) return;
+  if (!fs.readFileSync(target, 'utf8').includes(CLAUDE_MD_IMPORT)) return;
+
+  console.log(
+    pc.yellow(
+      `⚠ ${CLAUDE_MD_FILE} still imports ${CLAUDE_MD_IMPORT}, which is no longer needed.\n` +
+        `  ${CLAUDE_MD_FILE} now carries its own index, and the import inlines all of ` +
+        `${AGENTS_MD_FILE} on top of it.\n` +
+        `  Delete the \`${CLAUDE_MD_IMPORT}\` line to stop loading it twice.`,
+    ),
+  );
 }

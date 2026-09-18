@@ -39,6 +39,7 @@ Examples:
     .option('-a, --agents <agents>', 'Comma-separated list of agents to configure (cursor,gemini,copilot,generic)')
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
     .option('--no-agents-md', 'Do not write a rule index into AGENTS.md')
+    .option('--no-claude-md', 'Do not write an index into CLAUDE.md for Claude Code')
     .option('--postinstall', 'Add a postinstall script to package.json (compiles rules automatically for teammates)')
     .option('--no-postinstall', 'Do not add a postinstall script (default under --yes)')
     .action(async (cliOptions) => {
@@ -84,7 +85,8 @@ Examples:
         agents: parsedAgents,
         addToGitignore: cliOptions.gitignore === false ? false : (existingConfig ? existingConfig.gitignore_compiled_agents : undefined),
         addPostinstall: cliOptions.postinstall,
-        addAgentsMd: cliOptions.agentsMd
+        addAgentsMd: cliOptions.agentsMd,
+        addClaudeMd: cliOptions.claudeMd
       });
 
       if (!answers) {

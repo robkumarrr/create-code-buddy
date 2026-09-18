@@ -34,6 +34,7 @@ export interface PromptAnswers {
   addToGitignore: boolean;
   addPostinstall: boolean;
   addAgentsMd: boolean;
+  addClaudeMd: boolean;
 }
 
 export interface RunPromptsArgs {
@@ -42,6 +43,7 @@ export interface RunPromptsArgs {
   addToGitignore?: boolean;
   addPostinstall?: boolean;
   addAgentsMd?: boolean;
+  addClaudeMd?: boolean;
 }
 
 export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<PromptAnswers | null> {
@@ -59,7 +61,8 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
       // our own non-interactive instructions could edit a user's
       // package.json without asking. --postinstall opts in explicitly.
       addPostinstall: initialArgs.addPostinstall === true,
-      addAgentsMd: initialArgs.addAgentsMd !== false
+      addAgentsMd: initialArgs.addAgentsMd !== false,
+      addClaudeMd: initialArgs.addClaudeMd !== false
     };
   }
 
@@ -178,6 +181,9 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
     agents,
     addToGitignore,
     addPostinstall,
-    addAgentsMd
+    addAgentsMd,
+    // Not a wizard step: CLAUDE.md is only written when the claude adapter is
+    // active or the file already exists, so there is nothing to ask most people.
+    addClaudeMd: initialArgs.addClaudeMd !== false
   };
 }
