@@ -547,6 +547,60 @@ describe('specs are indexed, never compiled', () => {
     expect(readFile(root, 'AGENTS.md')).not.toContain('Project specs');
   });
 
+  it('warns when rules are still loose at the SSOT root, and names migrate', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
+    // The pre-rules/ layout, with no compiled output to trip the wipe guard --
+    // exactly what a fresh clone looks like, since the agent folders are
+    // gitignored by default and never committed.
+    writeFile(root, '.codebuddy/architecture.md', '---\ndescription: Arch\n---\n\n# Arch');
+
+    const logged: string[] = [];
+    vi.mocked(console.log).mockImplementation((msg?: unknown) => {
+      logged.push(String(msg));
+    });
+
+    await syncAgents(root);
+
+    const output = logged.join('\n');
+    expect(output).toContain('architecture.md');
+    expect(output).toContain('migrate');
+  });
+
+  it('does not mistake config.json for a stranded rule', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
+
+    const logged: string[] = [];
+    vi.mocked(console.log).mockImplementation((msg?: unknown) => {
+      logged.push(String(msg));
+    });
+
+    await syncAgents(root);
+
+    // config.json lives at the SSOT root by design. Warning about it would
+    // fire on every correctly-laid-out project there is.
+    expect(logged.join('\n')).not.toContain('migrate');
+  });
+
+  it('does not call a run that compiled nothing a success', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: {} });
+
+    const logged: string[] = [];
+    vi.mocked(console.log).mockImplementation((msg?: unknown) => {
+      logged.push(String(msg));
+    });
+
+    await syncAgents(root);
+
+    // `✔ Compiled 0 rules` reads as success for a run that did nothing. The
+    // tick is reserved for runs that actually wrote something.
+    const output = logged.join('\n');
+    expect(output).not.toContain('✔ Compiled 0 rules');
+    expect(output).toContain('No rules to compile');
+  });
+
   it('warns about a folder it does not recognize instead of ignoring it', async () => {
     const root = makeWorkspace();
     seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });

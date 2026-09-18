@@ -15,3 +15,9 @@ Do not edit them there; they are generated. See `.claude/rules/codebuddy-system.
 Everything that applies to more than Claude belongs in `.codebuddy/rules/`, which
 compiles to all six agent folders. Put something here only if it is true of Claude Code
 specifically and nothing else.
+
+## Attribution on PRs
+
+Do not add a "Generated with Claude Code" footer to pull request descriptions. The
+`Co-Authored-By` trailer on commits already records authorship; the footer repeats it
+somewhere nobody needs it.

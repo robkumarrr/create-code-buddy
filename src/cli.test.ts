@@ -128,6 +128,39 @@ describe('--yes must not modify package.json without consent', () => {
     expect(JSON.parse(readFile(root, 'package.json')).scripts?.postinstall).toContain('sync');
   });
 
+  it('tells the user, in the terminal, that package.json was modified', () => {
+    const root = makeWorkspace({ 'package.json': PKG });
+
+    const result = run(root, ['init', '--yes', '--agents', 'cursor', '--postinstall']);
+
+    // Editing package.json makes a command run on every `npm install`, for
+    // everyone on the team. It is the most consequential thing this tool does
+    // and it used to be the only one with no output at all -- so an agent
+    // could do it on a user's behalf and leave no trace in what they read.
+    // Asserted against real stdout, because "the user was told" means the
+    // terminal said so.
+    expect(result.stdout).toContain('package.json');
+    expect(result.stdout).toContain('npm install');
+  });
+
+  it('says nothing about package.json when it did not touch it', () => {
+    const root = makeWorkspace({ 'package.json': PKG });
+
+    const result = run(root, ['init', '--yes', '--agents', 'cursor']);
+
+    expect(result.stdout).not.toContain('package.json');
+  });
+
+  it('says so when --postinstall was asked for but there is no package.json', () => {
+    const root = makeWorkspace();
+
+    const result = run(root, ['init', '--yes', '--agents', 'cursor', '--postinstall']);
+
+    // Silently doing nothing leaves the user believing they got a hook.
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('package.json');
+  });
+
   it('honours --no-postinstall explicitly', () => {
     const root = makeWorkspace({ 'package.json': PKG });
 
