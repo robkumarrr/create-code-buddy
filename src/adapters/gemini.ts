@@ -6,15 +6,23 @@ import { WATERMARK } from '../core/constants';
 import { getRuleFiles } from '../core/fs';
 import { legacyAttributeLines } from './legacy-format';
 
-/** The one SSOT file this adapter treats specially — see extraFiles below. */
-const SYSTEM_RULE_PATH = 'codebuddy-system.md';
-
-/** Compiles rules to `.agents/rules/`, plus one native skill — see below. */
+/** Compiles rules to `.agents/rules/`, the location Antigravity documents. */
 const gemini: AgentAdapter = {
   id: 'gemini',
   label: 'Gemini',
   rulesDir: '.agents/rules',
   ignorePaths: ['.agents/rules/'],
+  /**
+   * Not an output location — a cleanup tail. Earlier versions also compiled
+   * the system rule into `.agents/skills/` as a native Gemini Skill, which
+   * duplicated content `.agents/rules/` already carried. That stopped; this
+   * stays so the copies already on disk get collected.
+   *
+   * It has to stay, too: `collectLegacyOrphans` below skips the `skills`
+   * segment, so removing this would leave every existing SKILL.md unreachable
+   * by both `sync` and `clean` — the same orphaning this adapter already had
+   * to be rescued from once.
+   */
   extraDirs: ['.agents/skills'],
 
   outputPath(rule: Rule): string {
@@ -26,26 +34,6 @@ const gemini: AgentAdapter = {
     return lines.length > 0
       ? `---\n${lines.join('\n')}\n---\n${WATERMARK}\n${rule.body}`
       : `${WATERMARK}\n${rule.body}`;
-  },
-
-  /**
-   * The SSOT's own system rule also compiles to a native Gemini Skill, which
-   * Gemini treats as an invokable capability rather than passive context.
-   *
-   * Written in ADDITION to the normal `.agents/rules/` output rather than
-   * replacing it. Redirecting instead would mean `outputPath()` returning a
-   * `../` path to escape its own `rulesDir`, which the rulesDir-scoped
-   * collector could never find again. `extraDirs` covers the collection side.
-   */
-  extraFiles(rules: Rule[]): { path: string; content: string }[] {
-    const systemRule = rules.find((rule) => rule.relPath === SYSTEM_RULE_PATH);
-    if (!systemRule) return [];
-
-    const lines = [...legacyAttributeLines(systemRule), 'name: codebuddy-system'];
-    const frontmatter = `---\n${lines.join('\n')}\n---\n`;
-    const content = `${frontmatter}${WATERMARK}\n${systemRule.body}`;
-
-    return [{ path: '.agents/skills/codebuddy-system/SKILL.md', content }];
   },
 
   /**

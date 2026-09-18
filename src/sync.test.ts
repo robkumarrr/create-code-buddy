@@ -241,7 +241,7 @@ describe('format fidelity', () => {
     expect(fm.paths).toEqual(['*.test.ts', '*.spec.ts']);
   });
 
-  it('gemini: compiles the system rule as a native skill', async () => {
+  it('gemini: writes one copy of each rule and no skill', async () => {
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['gemini'],
@@ -250,11 +250,13 @@ describe('format fidelity', () => {
 
     await syncAgents(root);
 
-    // Shipped once, then silently dropped when Gemini output moved to
-    // .agents/rules/ (plan task 3.11). Nothing guarded it, so the regression was
-    // invisible; the orphaned file is still sitting in this repo's own .agents/.
-    expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(true);
-    expect(readFile(root, '.agents/skills/codebuddy-system/SKILL.md')).toContain(WATERMARK);
+    // This rule used to compile twice for Gemini alone -- once here, and again
+    // as a native Skill. `.agents/rules/` is the location Antigravity
+    // documents, so the Skill was a second copy of content the agent already
+    // had, produced by matching one hardcoded filename.
+    expect(exists(root, '.agents/rules/codebuddy-system.md')).toBe(true);
+    expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(false);
+    expect(tree(root, '.agents')).toEqual(['.agents/rules/codebuddy-system.md']);
   });
 
   it('gemini: collects orphans left in the pre-refactor locations', async () => {
@@ -273,43 +275,56 @@ describe('format fidelity', () => {
     expect(exists(root, '.agents/mine.md')).toBe(true);
   });
 
-  it('collects the gemini skill when its source rule is deleted', async () => {
+  it('sweeps a skill left behind by an older version, folder and all', async () => {
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['gemini'],
-      // A second rule so removing the system one doesn't empty the rule set --
-      // that would trip the "refuse to wipe everything" guard, which is a
-      // different behavior than the one under test here.
-      rules: {
-        'codebuddy-system.md': ruleFile('System instructions', ['*.*'], '# System'),
-        'testing.md': MULTI_GLOB,
-      },
+      rules: { 'codebuddy-system.md': ruleFile('System instructions', ['*.*'], '# System') },
     });
-    await syncAgents(root);
-    expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(true);
+    // Exactly what upgrading from a version that still wrote the skill looks
+    // like on disk.
+    writeFile(root, '.agents/skills/codebuddy-system/SKILL.md', `${WATERMARK}\n# System`);
 
-    // The skill lives outside the adapter's rulesDir, so the normal
-    // rulesDir-scoped collector never looked there -- deleting the source rule
-    // left it stranded on disk, reachable by neither sync nor clean. That is
-    // the exact failure the skill restoration existed to fix, in miniature.
-    require('fs').unlinkSync(require('path').join(root, '.codebuddy/rules/codebuddy-system.md'));
     await syncAgents(root);
 
-    expect(exists(root, '.agents/rules/codebuddy-system.md')).toBe(false);
+    expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(false);
+    // Deleting the file and leaving its folders would hand every existing user
+    // empty directories to wonder about. `.agents/skills` goes too: unlike a
+    // rulesDir, nothing will ever write there again.
+    expect(exists(root, '.agents/skills/codebuddy-system')).toBe(false);
+    expect(exists(root, '.agents/skills')).toBe(false);
+    expect(exists(root, '.agents/rules/codebuddy-system.md')).toBe(true);
+  });
+
+  it('sweeps that skill even when gemini is no longer a selected agent', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });
+    writeFile(root, '.agents/skills/codebuddy-system/SKILL.md', `${WATERMARK}\n# System`);
+
+    await syncAgents(root);
+
+    // An abandoned output location is abandoned whether or not the agent that
+    // made it is still selected -- otherwise deselecting gemini would pin the
+    // orphan in place forever.
     expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(false);
   });
 
-  it('never deletes a hand-written file living beside the gemini skill', async () => {
+  it('never deletes a hand-written file living in .agents/skills', async () => {
     const root = makeWorkspace();
     seedProject(root, {
       agents: ['gemini'],
       rules: { 'codebuddy-system.md': ruleFile('System instructions', ['*.*'], '# System') },
     });
     writeFile(root, '.agents/skills/mine/SKILL.md', '# My own skill, not generated');
+    writeFile(root, '.agents/skills/codebuddy-system/SKILL.md', `${WATERMARK}\n# System`);
 
     await syncAgents(root);
 
+    // The sweep now clears this whole directory of watermarked files, so the
+    // watermark check is the only thing standing between it and a user's own
+    // skills. Worth pinning with the sweep running right next door.
     expect(exists(root, '.agents/skills/mine/SKILL.md')).toBe(true);
+    expect(exists(root, '.agents/skills/codebuddy-system/SKILL.md')).toBe(false);
   });
 
   it('nested rules keep their directory structure', async () => {

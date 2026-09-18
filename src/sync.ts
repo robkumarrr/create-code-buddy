@@ -125,20 +125,28 @@ function hasGeneratedOutput(projectRoot: string): boolean {
 }
 
 /**
- * The same collection pass for directories an adapter writes into outside its
- * `rulesDir` (see `AgentAdapter.extraDirs`). Expected paths are project-
- * relative here, because that is how `extraFiles` names what it produces.
+ * Sweeps a directory an adapter used to write into (see
+ * `AgentAdapter.extraDirs`). Nothing writes to one any more, so everything
+ * watermarked in here is by definition left over from an older version.
+ *
+ * The watermark check is the whole safety guarantee: a user's own file in the
+ * same directory has no watermark and is never touched.
  */
-function cleanStaleExtras(projectRoot: string, dir: string, expectedFromRoot: Set<string>) {
+function cleanStaleExtras(projectRoot: string, dir: string) {
   const base = path.join(projectRoot, dir);
   if (!fs.existsSync(base)) return;
 
   for (const file of getRuleFiles(base)) {
     const content = fs.readFileSync(file.abs, 'utf8');
     if (!content.includes(WATERMARK)) continue;
-    if (expectedFromRoot.has(path.relative(projectRoot, file.abs))) continue;
     fs.unlinkSync(file.abs);
+    pruneEmptyDirs(path.dirname(file.abs), base);
   }
+
+  // Unlike a rulesDir, nothing will ever write here again, so an emptied
+  // `base` is residue rather than scaffolding -- take it too. A user's own
+  // files in the same tree keep it non-empty, which is what stops this.
+  pruneEmptyDirs(base, projectRoot);
 }
 
 /** Parses every rule file under one SSOT subdirectory, surfacing warnings. */
@@ -219,12 +227,11 @@ export async function syncAgents(projectRoot: string) {
     const expectedPaths = active ? new Set(rules.map((rule) => adapter.outputPath(rule))) : new Set<string>();
     const removed = cleanStaleRules(targetBase, expectedPaths);
 
-    // Same treatment for anything the adapter writes outside its rulesDir:
-    // when inactive the expected set is empty, so all of it collects.
-    const extraFiles = active ? (adapter.extraFiles?.(rules) ?? []) : [];
-    const expectedExtras = new Set(extraFiles.map((extra) => path.normalize(extra.path)));
+    // Same treatment for directories the adapter used to write outside its
+    // rulesDir. Unconditional: an abandoned output location collects whether
+    // or not the agent is currently selected.
     for (const dir of adapter.extraDirs ?? []) {
-      cleanStaleExtras(projectRoot, dir, expectedExtras);
+      cleanStaleExtras(projectRoot, dir);
     }
 
     // Runs regardless of active/inactive, like the collectors above -- an
@@ -237,10 +244,6 @@ export async function syncAgents(projectRoot: string) {
     for (const rule of rules) {
       const targetAbs = path.join(targetBase, adapter.outputPath(rule));
       writeFileDeep(targetAbs, adapter.render(rule));
-    }
-
-    for (const extra of extraFiles) {
-      writeFileDeep(path.join(projectRoot, extra.path), extra.content);
     }
 
     ignorePathsByAgent.set(adapter.id, adapter.ignorePaths);
