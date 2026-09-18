@@ -28,7 +28,8 @@ describe('generator', () => {
       agents: ['cursor', 'gemini'],
       addToGitignore: true,
       addPostinstall: false,
-      addAgentsMd: false
+      addAgentsMd: false,
+      addClaudeMd: false
     }, '/fake/path');
 
     expect(fs.mkdirSync).toHaveBeenCalled();

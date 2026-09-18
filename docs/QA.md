@@ -25,6 +25,7 @@ Every scenario is tagged:
   - [E. Changing which agents you use](#e-changing-which-agents-you-use)
   - [F. A teammate clones the repo](#f-a-teammate-clones-the-repo)
   - [G. Upgrading from an older version](#g-upgrading-from-an-older-version)
+  - [H. Claude Code, alongside another tool](#h-claude-code-alongside-another-tool)
 - [Part 2 — Command reference](#part-2--command-reference)
   - [init / edit / config](#init--edit--config)
   - [sync](#sync)
@@ -306,6 +307,58 @@ ccb sync && find .agents
 
 [↑ Back to top](#table-of-contents)
 
+### H. Claude Code, alongside another tool
+
+**[manual]** — the case that shaped this behaviour.
+
+Claude Code reads `CLAUDE.md`, not `AGENTS.md`, so `sync` maintains a block in both. It
+does **not** add an `@AGENTS.md` import: Claude Code inlines an import's entire contents,
+so if another tool has written the same block into both files, importing loads it twice.
+
+Simulate a Laravel project with Boost installed:
+
+```bash
+cd "$(mktemp -d)"
+BOOST='<laravel-boost-guidelines>
+Pretend this is 300 lines of framework guidance.
+</laravel-boost-guidelines>'
+printf '# My app\n\n%s\n' "$BOOST" > CLAUDE.md
+printf '# My app\n\n%s\n' "$BOOST" > AGENTS.md
+ccb init --yes --agents claude
+mkdir -p .codebuddy/specs
+printf -- '---\ndescription: MCP server\nstatus: in-progress\n---\n\n# MCP\n' > .codebuddy/specs/mcp.md
+ccb sync
+```
+
+Check all four:
+
+- The Boost block is **untouched in both files**.
+- `CLAUDE.md` gained our block, and **no `@AGENTS.md` line was added**.
+- `CLAUDE.md` lists the **spec**, and does **not** repeat the rule list — those rules are
+  already in `.claude/rules/` and load on their own.
+- `AGENTS.md` has the full index, rules included.
+
+Then the gating, each in a fresh dir:
+
+| Setup | Expect |
+|---|---|
+| `init --yes --agents claude` | `CLAUDE.md` created |
+| `init --yes --agents cursor`, with a `CLAUDE.md` already present | block added, your content preserved |
+| `init --yes --agents cursor`, no `CLAUDE.md` | **no `CLAUDE.md` created** |
+| `init --yes --agents claude --no-claude-md` | no `CLAUDE.md` |
+
+Finally, the upgrade warning. Anyone who followed the old advice has the import:
+
+```bash
+cd "$(mktemp -d)" && printf '@AGENTS.md\n\n# Mine\n' > CLAUDE.md
+ccb init --yes --agents claude && ccb sync
+```
+
+Expect a yellow warning that the import now loads AGENTS.md twice, telling you to delete
+the line.
+
+[↑ Back to top](#table-of-contents)
+
 ---
 
 ## Part 2 — Command reference
@@ -350,6 +403,8 @@ No flags. Check each output form appears:
 - Yellow `⚠ Found 2 files directly in .codebuddy/ …` naming them and pointing at
   `migrate` — see [Journey F](#f-a-teammate-clones-the-repo).
 - `✔ Indexed rules in AGENTS.md` — only when enabled.
+- `✔ Indexed specs in CLAUDE.md` — when the claude adapter is on. Reads
+  `Indexed rules` instead when claude isn't selected but a `CLAUDE.md` exists.
 - Yellow `⚠ Ignoring .codebuddy/prompts/ — not a recognized folder.` — try
   `mkdir .codebuddy/prompts && touch .codebuddy/prompts/x.md`.
 - Red, exit 1, when there's no config:
@@ -529,6 +584,7 @@ npx ccb init --yes --agents cursor && npx ccb sync
 ```
 
 - Both bin names work: `ccb` and `create-code-buddy`.
+- `npm publish --dry-run` shows **no** `bin[...] was invalid and removed` warning.
 - `npx ccb --version` matches `package.json`.
 - If postinstall was opted into, it fires on a fresh `npm install` — and **fails
   gracefully offline** rather than breaking the install.
@@ -554,6 +610,8 @@ Exact text, for when you're unsure whether something is a wording change or a bu
 | Sync, rules left at SSOT root | `⚠ Found N files directly in .codebuddy/ — rules belong in .codebuddy/rules/.` then the filenames, then `Run \`npx create-code-buddy migrate\` to move them.` |
 | Sync, deletions | `(removed N stale)` |
 | Sync, index | `✔ Indexed rules in AGENTS.md` |
+| Sync, CLAUDE.md | `✔ Indexed specs in CLAUDE.md` (or `Indexed rules`, see above) |
+| Leftover `@AGENTS.md` | `⚠ CLAUDE.md still imports @AGENTS.md, which is no longer needed.` |
 | Unknown SSOT folder | `⚠ Ignoring .codebuddy/X/ — not a recognized folder. Rules belong in .codebuddy/rules/.` |
 | Sync, no config | ``No .codebuddy/config.json found. Run `npx create-code-buddy init` first.`` |
 | Migrate, nothing to do | `✔ Already using the current layout — nothing to migrate.` |
