@@ -69,14 +69,19 @@ export async function runPrompts(initialArgs: RunPromptsArgs = {}): Promise<Prom
   let addPostinstall = false;
   let addAgentsMd = initialArgs.addAgentsMd !== false;
 
-  const totalSteps = 3 + (hasPackageJson ? 1 : 0);
+  // `--no-agents-md` is an answer, not a default. Asking again after someone
+  // has said no on the command line is the tool second-guessing them, and the
+  // flag only ever reaches here as `false` when it was passed explicitly.
+  const askAgentsMd = initialArgs.addAgentsMd !== false;
+
+  const totalSteps = 2 + (hasPackageJson ? 1 : 0) + (askAgentsMd ? 1 : 0);
 
   const stepToType: Record<number, 'agents' | 'gitignore' | 'postinstall' | 'agentsmd'> = {};
   let currentStepIdx = 0;
   stepToType[currentStepIdx++] = 'agents';
   stepToType[currentStepIdx++] = 'gitignore';
   if (hasPackageJson) stepToType[currentStepIdx++] = 'postinstall';
-  stepToType[currentStepIdx++] = 'agentsmd';
+  if (askAgentsMd) stepToType[currentStepIdx++] = 'agentsmd';
 
   while (step < totalSteps) {
     const currentAction = stepToType[step];
