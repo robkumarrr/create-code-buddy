@@ -9,7 +9,7 @@ Manage rules and specs via the `.codebuddy/` folder. DO NOT edit these compiled 
 - `.claude/rules/`
 - `.clinerules/`
 - `.cursor/rules/`
-- `.agents/`
+- `.agents/rules/`
 - `.github/instructions/`
 - `.windsurf/rules/`
 
