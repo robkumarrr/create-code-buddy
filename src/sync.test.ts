@@ -497,6 +497,105 @@ describe('gitignore', () => {
   });
 });
 
+describe('CLAUDE.md', () => {
+  const RULE = ruleFile('Testing standards', ['*.test.ts']);
+  const SPEC = '---\ndescription: MCP server\nstatus: in-progress\n---\n\n# MCP';
+
+  it('creates it when the claude adapter is selected', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['claude'], rules: { 'testing.md': RULE } });
+
+    await syncAgents(root);
+
+    expect(exists(root, 'CLAUDE.md')).toBe(true);
+  });
+
+  it('maintains an existing one even when claude is not selected', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': RULE } });
+    writeFile(root, 'CLAUDE.md', '# My project\n');
+
+    await syncAgents(root);
+
+    // Someone can use Claude Code without compiling rules for it.
+    expect(readFile(root, 'CLAUDE.md')).toContain('create-code-buddy:start');
+    expect(readFile(root, 'CLAUDE.md')).toContain('# My project');
+  });
+
+  it('does not invent one for a project that never mentioned Claude', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': RULE } });
+
+    await syncAgents(root);
+
+    expect(exists(root, 'CLAUDE.md')).toBe(false);
+  });
+
+  it('omits the rule list when claude compiles rules of its own', async () => {
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['claude'],
+      rules: { 'testing.md': RULE },
+      specs: { 'mcp.md': SPEC },
+    });
+
+    await syncAgents(root);
+
+    const content = readFile(root, 'CLAUDE.md');
+    // Those rules are already in .claude/rules/ and load on their own, so
+    // listing them here would send the same content twice -- the exact
+    // duplication this file exists to avoid.
+    expect(content).not.toContain('## Project rules');
+    expect(content).not.toContain('.codebuddy/rules/testing.md');
+    // Specs have no other delivery path, so they are the point of the file.
+    expect(content).toContain('.codebuddy/specs/mcp.md');
+    expect(content).toContain('in-progress');
+  });
+
+  it('lists rules too when claude is not compiling them', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['cursor'], rules: { 'testing.md': RULE } });
+    writeFile(root, 'CLAUDE.md', '# Mine\n');
+
+    await syncAgents(root);
+
+    expect(readFile(root, 'CLAUDE.md')).toContain('.codebuddy/rules/testing.md');
+  });
+
+  it('respects claude_md: false', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['claude'], rules: { 'testing.md': RULE } });
+    writeFile(
+      root,
+      '.codebuddy/config.json',
+      JSON.stringify({ agents: ['claude'], gitignore_compiled_agents: true, claude_md: false }),
+    );
+
+    await syncAgents(root);
+
+    expect(exists(root, 'CLAUDE.md')).toBe(false);
+  });
+
+  it('warns that a leftover @AGENTS.md import now double-loads', async () => {
+    const root = makeWorkspace();
+    seedProject(root, { agents: ['claude'], rules: { 'testing.md': RULE } });
+    writeFile(root, 'CLAUDE.md', '@AGENTS.md\n\n# My project\n');
+
+    const logged: string[] = [];
+    vi.mocked(console.log).mockImplementation((msg?: unknown) => {
+      logged.push(String(msg));
+    });
+
+    await syncAgents(root);
+
+    // Claude Code inlines an import's whole contents, so with a block here the
+    // import loads all of AGENTS.md on top of it.
+    const output = logged.join('\n');
+    expect(output).toContain('@AGENTS.md');
+    expect(output).toContain('twice');
+  });
+});
+
 describe('specs are indexed, never compiled', () => {
   const SPEC = '---\ndescription: MCP server\nstatus: in progress\n---\n\n# MCP\n\nDetails.';
 

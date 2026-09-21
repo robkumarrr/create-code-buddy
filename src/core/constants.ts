@@ -88,13 +88,27 @@ export const GITIGNORE_END = '# --- Create Code Buddy (End) ---';
 
 /**
  * The cross-agent convention file, read natively by Codex, Cursor, Copilot,
- * Gemini CLI, Aider, Devin Desktop, Zed and others. Notably NOT read by
- * Claude Code, which reads CLAUDE.md — bridged with a one-line `@AGENTS.md`
- * import, documented in the README rather than written for the user, since
- * anyone selecting the `claude` agent already gets properly path-scoped
- * rules in `.claude/rules/` and doesn't need the pointer.
+ * Gemini CLI, Aider, Devin Desktop, Zed and others.
  */
 export const AGENTS_MD_FILE = 'AGENTS.md';
+
+/**
+ * Claude Code reads this instead of AGENTS.md, so it gets its own copy of the
+ * managed block rather than an `@AGENTS.md` import.
+ *
+ * The import looks tidier and is wrong. Claude Code inlines an import's whole
+ * contents at load time, so in a project where another tool has written the
+ * same block into both files — Laravel Boost does exactly this — importing
+ * loads that tool's content a second time. Writing our own block into each
+ * file duplicates nothing, because no agent reads both.
+ */
+export const CLAUDE_MD_FILE = 'CLAUDE.md';
+
+/**
+ * The import this tool used to tell people to add by hand. Detected so we can
+ * warn that it now double-loads AGENTS.md; never written.
+ */
+export const CLAUDE_MD_IMPORT = '@AGENTS.md';
 
 /**
  * Delimiters for the managed block inside AGENTS.md. Same approach as

@@ -87,18 +87,15 @@ every rule riding along in context on every turn. Only the block between the
 `create-code-buddy` markers is ever rewritten — anything you wrote around it is left
 alone. Opt out with `--no-agents-md`.
 
-> **Using Claude Code?** It reads `CLAUDE.md`, not `AGENTS.md`. Do both:
+> **Using Claude Code?** It reads `CLAUDE.md`, not `AGENTS.md`, so we maintain a block
+> there too — nothing to set up. Select the `claude` agent and your rules compile to
+> `.claude/rules/` with real path scoping, while `CLAUDE.md` carries the spec index,
+> which is the part nothing else delivers.
 >
-> 1. Select the `claude` agent above, so your rules compile to `.claude/rules/` and load
->    with real path scoping.
-> 2. Add this line to `CLAUDE.md`:
-> ```markdown
-> @AGENTS.md
-> ```
->
-> Step 2 isn't optional if you use specs. Rules compile into `.claude/rules/`, but the
-> **spec index lives only in `AGENTS.md`** — without the import, Claude Code is told to
-> open the spec covering its task while having no way to see the list.
+> **Don't add `@AGENTS.md` to `CLAUDE.md`.** We used to suggest it; it's wrong if any
+> other tool writes to both files. Claude Code inlines an import's entire contents, so
+> if something like Laravel Boost has put the same block in each, the import loads it a
+> second time. `sync` will warn you if it finds the leftover line.
 
 > **Windsurf → Devin Desktop:** Windsurf's docs now redirect to Devin Desktop's. We
 > target `.windsurf/rules/`, which is documented as a supported backward-compatible
@@ -150,8 +147,6 @@ npx create-code-buddy clean
 Being upfront about the edges, since a bug report from someone who believed the docs
 costs more than a shorter feature list:
 
-- **No `CLAUDE.md` generation.** Claude Code reads `CLAUDE.md` rather than `AGENTS.md`;
-  we document the one-line `@AGENTS.md` import instead of writing the file for you.
 - **No import from existing agent-specific rules.** If you already have `.cursor/rules/`
   or similar, there's no command yet to pull them into `.codebuddy/` for you.
 - **No drift detection.** If you commit compiled folders for your team and someone hand-edits
