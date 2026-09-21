@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { execFileSync } from 'child_process';
 import path from 'path';
 import { makeWorkspace, cleanupWorkspaces, readFile, exists } from './test/workspace';
+import { ADAPTERS, ADAPTER_IDS } from './adapters';
 
 /**
  * CLI-surface tests: the real binary, in a real directory, via a real subprocess.
@@ -76,7 +77,11 @@ describe('agent id validation', () => {
     const combined = output.stdout + output.stderr;
 
     expect(combined).toContain('notanagent');
-    expect(combined).toMatch(/cursor/);
+    // The message's whole purpose is listing every valid id, so assert every
+    // one -- matching a single id passed while the list could be anything.
+    for (const id of ADAPTER_IDS) {
+      expect(combined, `error should list "${id}"`).toContain(id);
+    }
   });
 
   it('rejects the whole run if any id in the list is invalid', () => {
@@ -87,19 +92,43 @@ describe('agent id validation', () => {
     expect(exists(root, '.cursor/rules')).toBe(false);
   });
 
-  it('accepts every documented agent id', () => {
+  it('accepts every agent id the registry defines', () => {
     const root = makeWorkspace();
-    const result = run(root, [
-      'init', '--yes', '--agents', 'cursor,claude,cline,copilot,gemini,windsurf',
-    ]);
+
+    // Driven by the registry, not a hand-copied string. The previous version
+    // listed the six ids as a literal, so a seventh adapter would have been
+    // silently untested -- and a literal is exactly how the help text below
+    // drifted away from reality in the first place.
+    const result = run(root, ['init', '--yes', '--agents', ADAPTER_IDS.join(',')]);
 
     expect(result.status).toBe(0);
-    for (const dir of [
-      '.cursor/rules', '.claude/rules', '.clinerules',
-      '.github/instructions', '.agents/rules', '.windsurf/rules',
-    ]) {
-      expect(exists(root, dir), dir).toBe(true);
+    for (const adapter of ADAPTERS) {
+      expect(exists(root, adapter.rulesDir), adapter.rulesDir).toBe(true);
     }
+  });
+
+  it('advertises exactly the agent ids that exist', () => {
+    const root = makeWorkspace();
+
+    // Commander wraps long descriptions, so the ids can land on a continuation
+    // line. Take the --agents entry plus every wrapped line under it, stopping
+    // at the next option.
+    const lines = run(root, ['init', '--help']).stdout.split('\n');
+    const startIdx = lines.findIndex((line) => line.includes('--agents'));
+    const rest = lines.slice(startIdx + 1);
+    const endOffset = rest.findIndex((line) => /^\s+-/.test(line));
+    const helpLine = [lines[startIdx], ...(endOffset === -1 ? rest : rest.slice(0, endOffset))].join(' ');
+
+    // `--help` is the only place a user learns which ids exist, and nothing
+    // executed it until this test. It had drifted to
+    // "(cursor,gemini,copilot,generic)": three real adapters missing, and
+    // `generic`, which has never existed. Someone reading it literally could
+    // not discover `claude`.
+    expect(startIdx).toBeGreaterThan(-1);
+    for (const id of ADAPTER_IDS) {
+      expect(helpLine, `help should mention "${id}"`).toContain(id);
+    }
+    expect(helpLine).not.toContain('generic');
   });
 });
 

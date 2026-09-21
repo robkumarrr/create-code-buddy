@@ -373,6 +373,7 @@ Every command and flag, so nothing goes unexercised in a full pass.
 |---|---|---|
 | `-y, --yes` | Skip prompts. Defaults: `cursor,gemini`, gitignore **on**, postinstall **off**, AGENTS.md **on** | [auto] |
 | `-a, --agents <list>` | Comma-separated, no spaces. Invalid ids fail loudly | [auto] |
+| `init --help` | The `--agents` line must list **exactly** the supported ids and nothing else. It once advertised `generic`, which has never existed, while omitting `claude`, `cline` and `windsurf` — so `--help` could not lead you to Claude Code. Cross-check against `src/adapters/index.ts`, never against this table. | [auto] |
 | `--no-gitignore` | No managed `.gitignore` block | [auto] |
 | `--no-agents-md` | No `AGENTS.md`; interactively, skips that question | [manual] |
 | `--postinstall` | Adds the postinstall script | [auto] |

@@ -36,7 +36,7 @@ Examples:
     .alias('config')
     .description(`Scaffold or edit your ${SSOT_DIR}/ SSOT and configure AI Agents`)
     .option('-y, --yes', 'Skip prompts and use default configuration')
-    .option('-a, --agents <agents>', 'Comma-separated list of agents to configure (cursor,gemini,copilot,generic)')
+    .option('-a, --agents <agents>', `Comma-separated list of agents to configure (${ADAPTER_IDS.join(',')})`)
     .option('--no-gitignore', 'Do not add compiled folders to .gitignore')
     .option('--no-agents-md', 'Do not write a rule index into AGENTS.md')
     .option('--no-claude-md', 'Do not write an index into CLAUDE.md for Claude Code')
