@@ -6,7 +6,7 @@ that uses it.
 
 ## Project Context
 
-- **Name**: `create-code-buddy` (`ccb` for short)
+- **Name**: `create-code-buddy`
 - **Purpose**: A CLI that centralizes AI agent context in one `.codebuddy/` folder and
   compiles it into the format each target agent actually reads — Cursor, Claude Code,
   Cline, Copilot, Gemini, Windsurf today.

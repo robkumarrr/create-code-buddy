@@ -107,6 +107,20 @@ describe('agent id validation', () => {
     }
   });
 
+  it('scaffolds the full package name, never the retired short one', () => {
+    const root = makeWorkspace();
+
+    expect(run(root, ['init', '--yes', '--agents', 'cursor']).status).toBe(0);
+
+    // The template used to say `npx ccb`. Without this tool installed -- the
+    // normal case after `npx create-code-buddy init` -- that resolves the
+    // unrelated npm package called `ccb`, so every scaffolded project told its
+    // agents to run someone else's package.
+    const system = readFile(root, '.codebuddy/rules/codebuddy-system.md');
+    expect(system).toContain('npx create-code-buddy sync');
+    expect(system).not.toMatch(/npx ccb(?![\w-])/);
+  });
+
   it('advertises exactly the agent ids that exist', () => {
     const root = makeWorkspace();
 

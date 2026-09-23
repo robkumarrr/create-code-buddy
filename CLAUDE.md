@@ -3,7 +3,7 @@
 Your project rules are compiled into `.claude/rules/` and load automatically. Don't edit
 them there — they're generated. See `.claude/rules/codebuddy-system.md`.
 
-The spec index is maintained in the block below by `ccb sync`. It's here rather than
+The spec index is maintained in the block below by `npx create-code-buddy sync`. It's here rather than
 imported from `AGENTS.md`, because Claude Code inlines an import's whole contents and
 this repo's `AGENTS.md` carries a rule index you already have in `.claude/rules/`.
 

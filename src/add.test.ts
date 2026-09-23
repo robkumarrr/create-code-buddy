@@ -11,7 +11,7 @@ import {
 /**
  * Integration tests for the non-interactive path of `add` -- the one an
  * agent actually calls (codebuddy-system.md instructs agents to run
- * `ccb add --name ... --globs ... --description ...`), and the one with zero
+ * `npx create-code-buddy add --name ... --globs ... --description ...`), and the one with zero
  * test coverage before this file (Task 4.2). The interactive wizard below it
  * in add.ts is out of scope here, per the plan's own description of this
  * task -- it's a series of clack prompts already exercised end-to-end by

@@ -47,18 +47,22 @@ cd /path/to/create-code-buddy
 npm ci && npm run build
 ```
 
-Drive the built binary directly. The `ccb` name only exists after an install, so define
-a shell function pointing at the build:
+Drive the built binary directly. Define a shell function with the real command's name,
+pointing at the build:
 
 ```bash
-ccb() { node /absolute/path/to/create-code-buddy/dist/index.js "$@"; }
+create-code-buddy() { node /absolute/path/to/create-code-buddy/dist/index.js "$@"; }
 ```
 
-Use a function, not `CCB="node …"`. A variable holding a two-word command does not
-word-split in zsh (macOS's default shell), so `ccb sync` fails with
+It shadows any installed copy, so every scenario tests your local build — and reads
+exactly like the command users type.
+
+Use a function, not `CODE_BUDDY="node …"`. A variable holding a two-word command does
+not word-split in zsh (macOS's default shell), so `$CODE_BUDDY sync` fails with
 `no such file or directory`. The function works in both bash and zsh.
 
-Every scenario below calls `ccb`, so it reads exactly like the real command.
+There is **no `ccb` short name.** Earlier versions shipped one, and `npx ccb` resolves
+an unrelated npm package when this tool isn't installed. Don't use it here either.
 
 **Always work in a scratch directory.** Several scenarios delete files.
 
@@ -83,7 +87,7 @@ How the tool is actually used. Run these first: this is where surprises live.
 tests against a four-step wizard with branching text and Go Back on three steps.
 
 ```bash
-cd "$(mktemp -d)" && npm init -y >/dev/null && ccb
+cd "$(mktemp -d)" && npm init -y >/dev/null && create-code-buddy
 ```
 
 Step through and check each:
@@ -120,7 +124,7 @@ ls -R .codebuddy && cat .codebuddy/config.json && cat AGENTS.md && cat .gitignor
 `Setup cancelled. No files were created.` and **exit 0**. Verify nothing was written:
 
 ```bash
-ccb ; echo "exit=$?" ; ls -a
+create-code-buddy ; echo "exit=$?" ; ls -a
 ```
 
 [↑ Back to top](#table-of-contents)
@@ -131,7 +135,7 @@ ccb ; echo "exit=$?" ; ls -a
 
 ```bash
 cd "$(mktemp -d)" && npm init -y >/dev/null
-ccb init --yes --agents cursor,claude
+create-code-buddy init --yes --agents cursor,claude
 ```
 
 Expect: SSOT initialised, a scaffolded-rules count, `Compiling rules…`, one
@@ -161,7 +165,7 @@ Flag combinations to try, each in a fresh dir:
 flag is an answer, not a default:
 
 ```bash
-cd "$(mktemp -d)" && npm init -y >/dev/null && ccb init --no-agents-md
+cd "$(mktemp -d)" && npm init -y >/dev/null && create-code-buddy init --no-agents-md
 ```
 
 Three questions, not four. No AGENTS.md step.
@@ -176,7 +180,7 @@ destroyed while that's unbuilt.
 ```bash
 cd "$(mktemp -d)" && mkdir -p .cursor/rules
 printf -- '---\ndescription: Mine\nglobs: *.ts\n---\n\n# My own rule\n' > .cursor/rules/mine.mdc
-ccb init --yes --agents cursor
+create-code-buddy init --yes --agents cursor
 cat .cursor/rules/mine.mdc
 ```
 
@@ -191,8 +195,8 @@ correct today.
 **[auto]** for mechanics, **[manual]** for reporting accuracy.
 
 ```bash
-cd "$(mktemp -d)" && ccb init --yes --agents cursor,claude
-ccb add --name "backend/database" --globs "*.sql, *.prisma" --description "DB rules"
+cd "$(mktemp -d)" && create-code-buddy init --yes --agents cursor,claude
+create-code-buddy add --name "backend/database" --globs "*.sql, *.prisma" --description "DB rules"
 ```
 
 Expect `✔ Created .codebuddy/rules/backend/database.md`, then a sync.
@@ -206,7 +210,7 @@ Now delete it by hand and re-sync — **this is the reporting check**:
 
 ```bash
 rm .codebuddy/rules/backend/database.md
-ccb sync
+create-code-buddy sync
 ```
 
 Expect `(removed 1 stale)` on each agent line. A silent deletion is a bug. Then:
@@ -222,8 +226,8 @@ ls .cursor/rules/           # backend/ must be gone, not left empty
 **[auto]**
 
 ```bash
-cd "$(mktemp -d)" && ccb init --yes --agents cursor,claude
-ccb init --yes --agents cursor        # drop claude
+cd "$(mktemp -d)" && create-code-buddy init --yes --agents cursor,claude
+create-code-buddy init --yes --agents cursor        # drop claude
 ```
 
 - `.claude/rules/` is collected — generated files gone.
@@ -243,7 +247,7 @@ cd "$(mktemp -d)"
 mkdir -p .codebuddy/rules
 echo '{"agents":["cursor"],"gitignore_compiled_agents":true}' > .codebuddy/config.json
 printf -- '---\ndescription: Testing\nglobs: ["*.test.ts"]\n---\n\n# Testing\n' > .codebuddy/rules/testing.md
-ccb sync && ls .cursor/rules/
+create-code-buddy sync && ls .cursor/rules/
 ```
 
 Expect `✔ Compiled 1 rule → Cursor` and the file present. Note **"1 rule"** singular.
@@ -255,7 +259,7 @@ cd "$(mktemp -d)"
 mkdir -p .codebuddy
 echo '{"agents":["cursor"],"gitignore_compiled_agents":true}' > .codebuddy/config.json
 printf -- '---\ndescription: Testing\nglobs: ["*.test.ts"]\n---\n\n# Testing\n' > .codebuddy/testing.md
-ccb sync ; echo "exit=$?"
+create-code-buddy sync ; echo "exit=$?"
 ```
 
 Expect a yellow warning naming both files and telling you to run `migrate`, then
@@ -263,7 +267,7 @@ Expect a yellow warning naming both files and telling you to run `migrate`, then
 Then confirm the way out actually works:
 
 ```bash
-ccb migrate --apply && ccb sync
+create-code-buddy migrate --apply && create-code-buddy sync
 ```
 
 Now `✔ Compiled 2 rules → Cursor`. This was
@@ -284,11 +288,11 @@ echo '{"agents":["cursor"],"gitignore_compiled_agents":true}' > .codebuddy/confi
 printf -- '---\ndescription: Testing\nglobs: ["*.test.ts"]\n---\n\n# Testing\n' > .codebuddy/testing.md
 printf '<!-- @generated by create-code-buddy -->\n# old\n' > .cursor/rules/testing.mdc
 
-ccb sync ; echo "exit=$?"     # 1. must REFUSE, delete nothing
+create-code-buddy sync ; echo "exit=$?"     # 1. must REFUSE, delete nothing
 ls .cursor/rules/              #    old file still there
-ccb migrate                   # 2. dry run — shows moves, changes nothing
-ccb migrate --apply           # 3. moves into .codebuddy/rules/
-ccb sync                      # 4. compiles normally again
+create-code-buddy migrate                   # 2. dry run — shows moves, changes nothing
+create-code-buddy migrate --apply           # 3. moves into .codebuddy/rules/
+create-code-buddy sync                      # 4. compiles normally again
 ```
 
 Step 1 is the important one: a red error naming `migrate`, exit 1, **and the existing
@@ -297,13 +301,29 @@ compiled file untouched**. Deleting anything there would be the "silent wipe" bu
 Also check the **Gemini skill sweep** (removed in #36):
 
 ```bash
-cd "$(mktemp -d)" && ccb init --yes --agents gemini
+cd "$(mktemp -d)" && create-code-buddy init --yes --agents gemini
 mkdir -p .agents/skills/codebuddy-system
 printf '<!-- @generated by create-code-buddy -->\n# old skill\n' > .agents/skills/codebuddy-system/SKILL.md
-ccb sync && find .agents
+create-code-buddy sync && find .agents
 ```
 
 `.agents/skills/` must be gone entirely — file *and* folders. `.agents/rules/` stays.
+
+Finally, **the retired `npx ccb` command**. Earlier versions scaffolded it into every
+project's `codebuddy-system.md`. Without this tool installed it runs an unrelated npm
+package, and `sync` never rewrites a user's own rule files — so `migrate` does:
+
+```bash
+cd "$(mktemp -d)" && create-code-buddy init --yes --agents cursor
+sed -i.bak 's/npx create-code-buddy/npx ccb/g' .codebuddy/rules/codebuddy-system.md
+create-code-buddy sync        # warns, lists the file, names migrate
+create-code-buddy migrate     # dry run: shows the file and occurrence count
+create-code-buddy migrate --apply
+grep -c "npx ccb" .codebuddy/rules/codebuddy-system.md   # expect 0
+```
+
+Also check it's precise: add `npx ccb-lint` to a rule and confirm `migrate --apply` leaves
+it alone — only the exact retired name is rewritten.
 
 [↑ Back to top](#table-of-contents)
 
@@ -324,10 +344,10 @@ Pretend this is 300 lines of framework guidance.
 </laravel-boost-guidelines>'
 printf '# My app\n\n%s\n' "$BOOST" > CLAUDE.md
 printf '# My app\n\n%s\n' "$BOOST" > AGENTS.md
-ccb init --yes --agents claude
+create-code-buddy init --yes --agents claude
 mkdir -p .codebuddy/specs
 printf -- '---\ndescription: MCP server\nstatus: in-progress\n---\n\n# MCP\n' > .codebuddy/specs/mcp.md
-ccb sync
+create-code-buddy sync
 ```
 
 Check all four:
@@ -351,7 +371,7 @@ Finally, the upgrade warning. Anyone who followed the old advice has the import:
 
 ```bash
 cd "$(mktemp -d)" && printf '@AGENTS.md\n\n# Mine\n' > CLAUDE.md
-ccb init --yes --agents claude && ccb sync
+create-code-buddy init --yes --agents claude && create-code-buddy sync
 ```
 
 Expect a yellow warning that the import now loads AGENTS.md twice, telling you to delete
@@ -431,7 +451,7 @@ change no file timestamps in a way that churns git.
 |---|---|---|
 | `migrate` | Lists moves, then yellow *"Nothing changed. Re-run with --apply"* | [auto] |
 | `migrate --apply` | Green `✔ Moved N files.` plus a hint to sync | [auto] |
-| Run twice | Green `✔ Already using the current layout — nothing to migrate.` | [auto] |
+| Run twice | Green `✔ Already up to date — nothing to migrate.` | [auto] |
 | Same name in both layouts | Red refusal listing collisions; **neither file altered** | [auto] |
 | No `.codebuddy/` at all | Red failure, exit 1 | [auto] |
 
@@ -440,7 +460,7 @@ change no file timestamps in a way that churns git.
 **[manual]** — interactive, barely covered.
 
 ```bash
-ccb list
+create-code-buddy list
 ```
 
 Arrow through, select one, confirm the green `✔ Selected Entry!` and a correct relative
@@ -456,8 +476,8 @@ path. Cancel with Ctrl+C → yellow `Navigation cancelled.`. In an empty project
 **[auto]** by the golden snapshot, but eyeball it after any adapter change.
 
 ```bash
-cd "$(mktemp -d)" && ccb init --yes --agents cursor,claude,cline,gemini,copilot,windsurf
-ccb add --name scoped --globs "*.sql, *.prisma" --description "DB rules"
+cd "$(mktemp -d)" && create-code-buddy init --yes --agents cursor,claude,cline,gemini,copilot,windsurf
+create-code-buddy add --name scoped --globs "*.sql, *.prisma" --description "DB rules"
 ```
 
 | Agent | Directory | Ext | Always-apply | Glob-scoped |
@@ -492,9 +512,9 @@ Scratch directory only.
 ### Safe clean — **[auto]**
 
 ```bash
-cd "$(mktemp -d)" && ccb init --yes --agents cursor,claude
+cd "$(mktemp -d)" && create-code-buddy init --yes --agents cursor,claude
 printf '# my own rule, no watermark\n' > .cursor/rules/mine.mdc
-ccb clean
+create-code-buddy clean
 ```
 
 - Multiselect over existing folders, all preselected.
@@ -506,7 +526,7 @@ ccb clean
 ### Factory reset — **[manual] for the restore**
 
 ```bash
-ccb clean --hard
+create-code-buddy clean --hard
 ```
 
 - Warning banner `⚠️  WARNING: Factory Reset` and three bullets.
@@ -520,7 +540,7 @@ ccb clean --hard
 **Then actually restore it — nothing automated proves the tarball works:**
 
 ```bash
-tar -xzf .codebuddy-backup-*.tar.gz && ls -R .codebuddy && ccb sync
+tar -xzf .codebuddy-backup-*.tar.gz && ls -R .codebuddy && create-code-buddy sync
 ```
 
 Your rules must come back and recompile. A backup that cannot be restored is worse than
@@ -529,7 +549,7 @@ no backup, because it was trusted.
 ### Non-TTY guard — **[auto]**
 
 ```bash
-echo | ccb clean --hard ; echo "exit=$?"
+echo | create-code-buddy clean --hard ; echo "exit=$?"
 ```
 
 Expect exit 1 and: *"clean --hard needs interactive confirmation and stdin is not a TTY.
@@ -581,12 +601,13 @@ npm pack --dry-run
 ```bash
 cd "$(mktemp -d)" && npm init -y >/dev/null
 npm install /path/to/create-code-buddy-<version>.tgz
-npx ccb init --yes --agents cursor && npx ccb sync
+npx create-code-buddy init --yes --agents cursor && npx create-code-buddy sync
 ```
 
-- Both bin names work: `ccb` and `create-code-buddy`.
+- The only bin is `create-code-buddy`. There must be **no** `ccb` entry in
+  `package.json` — `npx ccb` resolves an unrelated npm package.
 - `npm publish --dry-run` shows **no** `bin[...] was invalid and removed` warning.
-- `npx ccb --version` matches `package.json`.
+- `npx create-code-buddy --version` matches `package.json`.
 - If postinstall was opted into, it fires on a fresh `npm install` — and **fails
   gracefully offline** rather than breaking the install.
 
@@ -615,8 +636,10 @@ Exact text, for when you're unsure whether something is a wording change or a bu
 | Leftover `@AGENTS.md` | `⚠ CLAUDE.md still imports @AGENTS.md, which is no longer needed.` |
 | Unknown SSOT folder | `⚠ Ignoring .codebuddy/X/ — not a recognized folder. Rules belong in .codebuddy/rules/.` |
 | Sync, no config | ``No .codebuddy/config.json found. Run `npx create-code-buddy init` first.`` |
-| Migrate, nothing to do | `✔ Already using the current layout — nothing to migrate.` |
-| Migrate, dry run | `Nothing changed. Re-run with --apply to move them.` |
+| Migrate, nothing to do | `✔ Already up to date — nothing to migrate.` |
+| Migrate, old command found | `` `npx ccb` runs an unrelated npm package. Rewriting to `npx create-code-buddy`: `` |
+| Sync, old command in a rule | `` ⚠ Rules still tell agents to run `npx ccb`, an unrelated npm package, not this tool: `` |
+| Migrate, dry run | `Nothing changed. Re-run with --apply to make these changes.` |
 | Migrate, collision | `Cannot migrate — these already exist at the destination:` |
 | Clean, none found | `No compiled agent folders found to clean.` |
 | Clean, done | `✔ Cleaned N generated files.` |

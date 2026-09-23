@@ -646,6 +646,25 @@ describe('specs are indexed, never compiled', () => {
     expect(readFile(root, 'AGENTS.md')).not.toContain('Project specs');
   });
 
+  it('warns when a rule still tells agents to run npx ccb, and names migrate', async () => {
+    const root = makeWorkspace();
+    seedProject(root, {
+      agents: ['cursor'],
+      rules: { 'codebuddy-system.md': '---\ndescription: S\n---\n\nRun `npx ccb sync`.' },
+    });
+
+    const logged: string[] = [];
+    vi.mocked(console.log).mockImplementation((msg?: unknown) => {
+      logged.push(String(msg));
+    });
+
+    await syncAgents(root);
+
+    const output = logged.join('\n');
+    expect(output).toContain('codebuddy-system.md');
+    expect(output).toContain('migrate');
+  });
+
   it('warns when rules are still loose at the SSOT root, and names migrate', async () => {
     const root = makeWorkspace();
     seedProject(root, { agents: ['cursor'], rules: { 'testing.md': MULTI_GLOB } });

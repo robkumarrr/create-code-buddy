@@ -55,7 +55,7 @@ a repo with four specs.
 **D. Don't track it in specs. Use issues.**
 GitHub already has blocked-by relationships, and they update when the blocking issue
 closes — no hand-editing, no rot. Costs the platform-agnostic property that is the
-entire reason ccb exists: an agent reading `.codebuddy/specs/` offline sees nothing.
+entire reason this tool exists: an agent reading `.codebuddy/specs/` offline sees nothing.
 
 ## The tension
 

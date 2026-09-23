@@ -25,7 +25,7 @@ now.
 
 1. **During `init`** — scan for existing rules and offer to adopt them:
    *"Found 4 rules in .cursor/rules. Import them into .codebuddy/rules/?"*
-2. **On demand** — `npx ccb import`, for projects that ran `init` before this existed.
+2. **On demand** — `npx create-code-buddy import`, for projects that ran `init` before this existed.
 
 ## Detection
 
