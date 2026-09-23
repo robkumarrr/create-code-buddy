@@ -1,3 +1,5 @@
+import { TOOL_NAME } from './core/constants';
+
 export const BASELINE_RULES: Record<string, { description: string, globs: string, content: string }> = {
   'architecture.md': {
     description: 'High-level architecture and system design guidelines',
@@ -33,12 +35,12 @@ Manage rules and specs via the \`.codebuddy/\` folder. DO NOT edit these compile
 - \`.codebuddy/specs/*.md\` — feature specs. These are NOT compiled. They are listed in
   AGENTS.md with their status; open the one covering what you are working on.
 
-- **Create a rule**: Run \`npx ccb add --name "folder/rule" --globs "*.ts" --description "..."\`
+- **Create a rule**: Run \`npx ${TOOL_NAME} add --name "folder/rule" --globs "*.ts" --description "..."\`
 - **Create a spec**: No command for this yet — write \`.codebuddy/specs/<name>.md\` by hand
   with \`description:\` and \`status:\` frontmatter, then sync. \`status:\` is one of
   \`backlog\`, \`in-progress\`, \`in-review\`, \`done\`.
 - **Edit/Delete**: Modify or delete the \`.codebuddy/rules/*.md\` files natively.
-- **Sync**: ALWAYS run \`npx ccb sync\` after manual edits to compile changes globally.
+- **Sync**: ALWAYS run \`npx ${TOOL_NAME} sync\` after manual edits to compile changes globally.
 
 ## Agent Identity → --agents flag
 Pass \`--agents\` as a comma-separated string (no spaces) matching your runtime:
@@ -51,10 +53,10 @@ Pass \`--agents\` as a comma-separated string (no spaces) matching your runtime:
 - \`windsurf\` → Windsurf, Codeium
 
 Example — Antigravity running non-interactively:
-  npx ccb init --yes --agents gemini
+  npx ${TOOL_NAME} init --yes --agents gemini
 
 Multiple agents (comma-separated, no spaces):
-  npx ccb init --yes --agents gemini,cursor
+  npx ${TOOL_NAME} init --yes --agents gemini,cursor
 `
   }
 };

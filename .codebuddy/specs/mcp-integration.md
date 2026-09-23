@@ -13,7 +13,7 @@ typed interface instead of shelling out to the CLI.
 ## Why
 
 - Shell commands are fragile. Agents mistype flags, sandboxes block execution, and
-  there is no structured error handling — a failed `npx ccb add` looks much like a
+  there is no structured error handling — a failed `npx create-code-buddy add` looks much like a
   successful one to a model that cannot see the exit code.
 - A rules file asking an agent to run a command is documentation. A typed
   `get_rules_for_file(path)` is capability.
@@ -23,7 +23,8 @@ typed interface instead of shelling out to the CLI.
 ## Naming
 
 **No prefix.** MCP clients namespace tools by server, so `ccb_list_rules` renders as
-stutter — `ccb:ccb_list_rules`. Tools are `list_rules`, `get_rule`, `sync`.
+stutter — `create-code-buddy:create-code-buddy_list_rules`. Tools are `list_rules`,
+`get_rule`, `sync`.
 
 ## What gets exposed
 
@@ -42,7 +43,7 @@ nobody has thought of yet.
 |---|---|---|
 | `list_rules` | — | Every rule in `.codebuddy/rules/` with its frontmatter. |
 | `get_rule` | `name` | Full content of one rule. |
-| `add_rule` | `name, description, globs?, content?` | Mirrors `ccb add`. |
+| `add_rule` | `name, description, globs?, content?` | Mirrors `create-code-buddy add`. |
 | `update_rule` | `name, content` | |
 | `delete_rule` | `name` | Recoverable: the source is in git, and `sync` rebuilds compiled copies. |
 
@@ -56,7 +57,7 @@ programmatically, and there is still no way to create one except by hand.
 |---|---|---|
 | `list_specs` | — | Path, description, status. What `AGENTS.md` indexes, as data. |
 | `get_spec` | `name` | |
-| `add_spec` | `name, description, status?` | Closes the manual gap — `ccb add` writes rules only. |
+| `add_spec` | `name, description, status?` | Closes the manual gap — `add` writes rules only. |
 | `set_spec_status` | `name, status` | |
 
 `set_spec_status` is what makes a spec track live work instead of being a static

@@ -9,7 +9,18 @@ import path from 'path';
  */
 
 export const TOOL_NAME = 'create-code-buddy';
-export const TOOL_BIN = 'ccb';
+
+/**
+ * The short name earlier versions shipped as a second bin. Recognized so
+ * `migrate` can rewrite it; never written, and no longer installed.
+ *
+ * It was worse than redundant. The bin only exists once this package is
+ * installed, and the normal flow -- `npx create-code-buddy init` -- installs
+ * nothing, so `npx ccb` resolved the unrelated npm package called `ccb`.
+ * Earlier versions scaffolded that command into every project's
+ * codebuddy-system.md, telling agents to run a package we don't own.
+ */
+export const LEGACY_SHORT_NAME = 'ccb';
 
 /** Reported by `--version` when package.json can't be read at all. */
 const UNKNOWN_VERSION = '0.0.0-unknown';

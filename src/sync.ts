@@ -5,6 +5,7 @@ import {
   SSOT_DIR,
   CONFIG_FILE,
   TOOL_NAME,
+  LEGACY_SHORT_NAME,
   WATERMARK,
   GITIGNORE_START,
   GITIGNORE_END,
@@ -20,7 +21,7 @@ import { getRuleFiles, writeFileDeep, pruneEmptyDirs } from './core/fs';
 import { parseRule, type Rule } from './core/rule';
 import { fail } from './core/report';
 import { updateAgentsMd, updateClaudeMd } from './core/agents-md';
-import { planMigration } from './migrate';
+import { planMigration, planRewrites } from './migrate';
 import { ADAPTERS } from './adapters';
 
 export interface CodeBuddyConfig {
@@ -165,6 +166,29 @@ function readSsotDir(dir: string): Rule[] {
 }
 
 /**
+ * Says something when a rule still tells agents to run `npx ccb`.
+ *
+ * Earlier versions scaffolded that command into every project. Without this
+ * tool installed it resolves an unrelated npm package, so an agent following
+ * its own rules runs someone else's code -- or, today, fails confusingly. The
+ * rewrite lives in `migrate`, which is explicit and dry-run first; sync only
+ * points at it, the same way it already does for the old flat layout.
+ */
+function warnAboutLegacyCommand(projectRoot: string): void {
+  const rewrites = planRewrites(projectRoot);
+  if (rewrites.length === 0) return;
+
+  const files = rewrites.map((r) => `    ${r.path}`).join('\n');
+  console.log(
+    pc.yellow(
+      `⚠ Rules still tell agents to run \`npx ${LEGACY_SHORT_NAME}\`, an unrelated npm package, not this tool:\n` +
+        `${files}\n` +
+        `  Run \`npx ${TOOL_NAME} migrate\` to fix ${rewrites.length === 1 ? 'it' : 'them'}.`,
+    ),
+  );
+}
+
+/**
  * Says something when rules are still sitting loose at the top of the SSOT,
  * from before `rules/` existed.
  *
@@ -229,6 +253,7 @@ export async function syncAgents(projectRoot: string) {
   const specs = readSsotDir(specsRoot(projectRoot));
   warnAboutUnknownSubdirs(projectRoot);
   warnAboutLooseRules(projectRoot);
+  warnAboutLegacyCommand(projectRoot);
 
   if (rules.length === 0 && hasGeneratedOutput(projectRoot)) {
     // Distinguish the two ways to land here, because the fix differs: an older

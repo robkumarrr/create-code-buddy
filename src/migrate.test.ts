@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { migrate, planMigration } from './migrate';
+import { migrate, planMigration, planRewrites } from './migrate';
 import { syncAgents } from './sync';
 import {
   makeWorkspace,
@@ -138,5 +138,72 @@ describe('the full upgrade path', () => {
     expect(exists(root, '.cursor/rules/testing.mdc')).toBe(true);
     expect(exists(root, '.cursor/rules/backend/database.mdc')).toBe(true);
     expect(readFile(root, '.cursor/rules/testing.mdc')).toContain('Testing standards');
+  });
+});
+
+describe('rewriting the retired short name', () => {
+  // `npx ccb` never meant this tool unless it was installed, and the normal
+  // flow (`npx create-code-buddy init`) installs nothing. In that case npx
+  // resolves the npm package called `ccb`, which belongs to someone else.
+  // Earlier versions scaffolded that command into every project's
+  // codebuddy-system.md, so existing projects still tell agents to run it.
+  const OLD_RULE =
+    '---\ndescription: System\n---\n\n# System\n\n' +
+    '- Run `npx ccb sync` after edits.\n' +
+    '- Create one with `npx ccb add --name x`.\n';
+
+  function currentLayoutWith(content: string): string {
+    const root = makeWorkspace();
+    writeFile(root, '.codebuddy/config.json', CONFIG);
+    writeFile(root, '.codebuddy/rules/codebuddy-system.md', content);
+    return root;
+  }
+
+  it('finds the old command without changing anything on a dry run', async () => {
+    const root = currentLayoutWith(OLD_RULE);
+
+    expect(planRewrites(root)).toHaveLength(1);
+    await migrate(root);
+
+    expect(readFile(root, '.codebuddy/rules/codebuddy-system.md')).toBe(OLD_RULE);
+  });
+
+  it('rewrites every occurrence with --apply', async () => {
+    const root = currentLayoutWith(OLD_RULE);
+
+    await migrate(root, true);
+
+    const content = readFile(root, '.codebuddy/rules/codebuddy-system.md');
+    expect(content).not.toContain('npx ccb');
+    expect(content).toContain('npx create-code-buddy sync');
+    expect(content).toContain('npx create-code-buddy add --name x');
+  });
+
+  it('leaves a different package that merely starts with ccb alone', async () => {
+    const root = currentLayoutWith('# Mine\n\nRun `npx ccb-lint` first.\n');
+
+    await migrate(root, true);
+
+    // Only the exact retired name is ours to rewrite.
+    expect(readFile(root, '.codebuddy/rules/codebuddy-system.md')).toContain('npx ccb-lint');
+  });
+
+  it('is idempotent', async () => {
+    const root = currentLayoutWith(OLD_RULE);
+    await migrate(root, true);
+
+    expect(planRewrites(root)).toEqual([]);
+  });
+
+  it('fixes files it moves out of the old flat layout too', async () => {
+    const root = makeWorkspace();
+    writeFile(root, '.codebuddy/config.json', CONFIG);
+    writeFile(root, '.codebuddy/codebuddy-system.md', OLD_RULE);
+
+    await migrate(root, true);
+
+    const content = readFile(root, '.codebuddy/rules/codebuddy-system.md');
+    expect(content).toContain('npx create-code-buddy sync');
+    expect(content).not.toContain('npx ccb');
   });
 });
